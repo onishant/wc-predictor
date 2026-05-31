@@ -28,6 +28,9 @@ export default function Home() {
         </div>
 
         <div className="flex gap-3">
+          <Link href="/auth" className="rounded-lg border border-slate-700 px-4 py-2 font-semibold hover:bg-slate-800">
+            Login / Sign up
+          </Link>
           <Link href="/fixtures" className="rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-slate-950 hover:bg-cyan-400">
             View Fixtures
           </Link>
