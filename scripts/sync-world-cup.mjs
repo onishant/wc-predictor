@@ -38,6 +38,14 @@ const {
   WC_SEASON,
 } = process.env;
 
+console.log('[sync-world-cup] cwd:', process.cwd());
+console.log('[sync-world-cup] env present:', {
+  FOOTBALL_DATA_API_KEY: Boolean(FOOTBALL_DATA_API_KEY),
+  NEXT_PUBLIC_SUPABASE_URL: Boolean(NEXT_PUBLIC_SUPABASE_URL),
+  SUPABASE_SERVICE_ROLE_KEY: Boolean(SUPABASE_SERVICE_ROLE_KEY),
+  WC_SEASON: Boolean(WC_SEASON),
+});
+
 if (!FOOTBALL_DATA_API_KEY) {
   throw new Error('Missing FOOTBALL_DATA_API_KEY');
 }
