@@ -138,7 +138,7 @@ export function VenueMap({ venues, matches, userId }: Props) {
               getTooltip={({ object }) =>
                 object
                   ? {
-                      text: `${object.venueName}\n${object.city}\n${object.country}`,
+                      text: `${object.venueName}\n${object.commonName}\n${object.city}, ${object.country}`,
                     }
                   : null
               }
@@ -175,8 +175,11 @@ export function VenueMap({ venues, matches, userId }: Props) {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Selected venue</p>
               <h3 className="mt-1 text-2xl font-semibold text-slate-50">{selectedVenue.venueName}</h3>
               <p className="mt-2 text-sm text-slate-300">
-                {selectedVenue.city}, {selectedVenue.country}
+                {selectedVenue.commonName} · {selectedVenue.city}, {selectedVenue.country}
               </p>
+              {selectedVenue.municipality && (
+                <p className="mt-1 text-xs text-slate-400">Stadium location: {selectedVenue.municipality}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -256,7 +259,7 @@ export function VenueMap({ venues, matches, userId }: Props) {
                 >
                   <span>
                     <span className="block text-sm font-medium text-slate-50">{venue.venueName}</span>
-                    <span className="block text-xs text-slate-400">{venue.city}</span>
+                    <span className="block text-xs text-slate-400">{venue.commonName} · {venue.city}</span>
                   </span>
                   <span className="text-xs text-slate-400">{count} fixtures</span>
                 </button>
