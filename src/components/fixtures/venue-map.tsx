@@ -29,11 +29,22 @@ const CARTO_DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/
 function venueColor(country: string) {
   switch (country) {
     case 'Canada':
-      return [251, 146, 60, 230] as const;
+      return [251, 146, 60, 245] as const;
     case 'Mexico':
-      return [74, 222, 128, 230] as const;
+      return [74, 222, 128, 245] as const;
     default:
-      return [34, 211, 238, 230] as const;
+      return [34, 211, 238, 245] as const;
+  }
+}
+
+function venueRingColor(country: string) {
+  switch (country) {
+    case 'Canada':
+      return [251, 146, 60, 190] as const;
+    case 'Mexico':
+      return [74, 222, 128, 190] as const;
+    default:
+      return [34, 211, 238, 190] as const;
   }
 }
 
@@ -71,6 +82,41 @@ export function VenueMap({ venues, matches, userId }: Props) {
     [matchesByVenue, venues]
   );
 
+  const selectedVenuePoint = useMemo(
+    () => venuePoints.find((venue) => venue.id === selectedVenueId),
+    [selectedVenueId, venuePoints]
+  );
+
+  const selectedHaloLayer = new ScatterplotLayer({
+    id: 'selected-venue-halo',
+    data: selectedVenuePoint ? [selectedVenuePoint] : [],
+    pickable: false,
+    stroked: true,
+    filled: true,
+    radiusUnits: 'pixels',
+    lineWidthUnits: 'pixels',
+    getPosition: (d) => [d.longitude, d.latitude],
+    getRadius: (d) => 31 + Math.min(d.matchCount, 6),
+    getFillColor: [34, 211, 238, 36],
+    getLineColor: [255, 255, 255, 220],
+    getLineWidth: 2,
+  });
+
+  const ringLayer = new ScatterplotLayer({
+    id: 'venue-match-rings',
+    data: venuePoints,
+    pickable: false,
+    stroked: true,
+    filled: true,
+    radiusUnits: 'pixels',
+    lineWidthUnits: 'pixels',
+    getPosition: (d) => [d.longitude, d.latitude],
+    getRadius: (d) => 20 + Math.min(d.matchCount * 1.4, 9),
+    getFillColor: [15, 23, 42, 170],
+    getLineColor: (d) => (d.id === selectedVenueId ? [255, 255, 255, 235] : venueRingColor(d.country)),
+    getLineWidth: (d) => (d.id === selectedVenueId ? 3 : 2),
+  });
+
   const markerLayer = new ScatterplotLayer({
     id: 'venue-markers',
     data: venuePoints,
@@ -80,10 +126,10 @@ export function VenueMap({ venues, matches, userId }: Props) {
     radiusUnits: 'pixels',
     lineWidthUnits: 'pixels',
     getPosition: (d) => [d.longitude, d.latitude],
-    getRadius: (d) => (d.id === selectedVenueId ? 16 : 11) + Math.min(d.matchCount * 0.7, 10),
+    getRadius: (d) => (d.id === selectedVenueId ? 13 : 10),
     getFillColor: (d) => venueColor(d.country),
-    getLineColor: [255, 255, 255, 220],
-    getLineWidth: (d) => (d.id === selectedVenueId ? 3 : 1.5),
+    getLineColor: [255, 255, 255, 235],
+    getLineWidth: (d) => (d.id === selectedVenueId ? 2.5 : 1),
     onClick: ({ object }) => {
       if (!object) return;
       setSelectedVenueId(object.id);
@@ -97,20 +143,34 @@ export function VenueMap({ venues, matches, userId }: Props) {
     },
   });
 
+  const countLayer = new TextLayer({
+    id: 'venue-match-counts',
+    data: venuePoints,
+    pickable: false,
+    getPosition: (d) => [d.longitude, d.latitude],
+    getText: (d) => String(d.matchCount),
+    getSize: (d) => (d.id === selectedVenueId ? 13 : 11),
+    sizeUnits: 'pixels',
+    getColor: [2, 6, 23, 255],
+    getTextAnchor: 'middle',
+    getAlignmentBaseline: 'center',
+  });
+
   const labelLayer = new TextLayer({
     id: 'venue-labels',
     data: venuePoints,
     pickable: false,
     getPosition: (d) => [d.longitude, d.latitude],
     getText: (d) => d.city,
-    getSize: 11,
+    getSize: (d) => (d.id === selectedVenueId ? 12 : 10),
     sizeUnits: 'pixels',
     getColor: (d) => (d.id === selectedVenueId ? [255, 255, 255, 255] : [203, 213, 225, 220]),
+    getTextAnchor: 'middle',
     getAlignmentBaseline: 'top',
-    getPixelOffset: [0, 16],
+    getPixelOffset: [0, 24],
   });
 
-  const layers = [markerLayer, labelLayer];
+  const layers = [selectedHaloLayer, ringLayer, markerLayer, countLayer, labelLayer];
 
   return (
     <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
@@ -138,7 +198,7 @@ export function VenueMap({ venues, matches, userId }: Props) {
               getTooltip={({ object }) =>
                 object
                   ? {
-                      text: `${object.venueName}\n${object.commonName}\n${object.city}, ${object.country}`,
+                      text: `${object.venueName}\n${object.commonName}\n${object.city}, ${object.country}\n${object.matchCount} group-stage fixtures`,
                     }
                   : null
               }
@@ -161,7 +221,7 @@ export function VenueMap({ venues, matches, userId }: Props) {
                 CARTO basemap
               </span>
               <span className="rounded-full border border-slate-700 bg-slate-950/80 px-3 py-1 text-xs text-slate-300 backdrop-blur">
-                deck.gl markers
+                Match-count markers
               </span>
             </div>
           </div>
