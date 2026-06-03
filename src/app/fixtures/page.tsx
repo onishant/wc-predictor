@@ -4,10 +4,6 @@ import { WORLD_CUP_VENUES } from '@/lib/world-cup-venues';
 import { supabase } from '@/lib/supabase';
 
 export default async function FixturesPage() {
-  const {
-    data: { user },
-  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
-
   let apiError: string | null = null;
   let worldCupData: Awaited<ReturnType<typeof getWorldCupScheduleAndStats>> | null = null;
 
@@ -30,11 +26,9 @@ export default async function FixturesPage() {
           </p>
         </header>
 
-        {!user && (
+        {!supabase && (
           <p className="mt-2 text-amber-300">
-            {!supabase
-              ? 'Supabase auth is not configured yet, so predictions are disabled.'
-              : 'Login required to submit predictions.'}
+            Supabase auth is not configured yet, so predictions are disabled.
           </p>
         )}
         {apiError && <p className="mt-2 text-red-400">Failed to load World Cup data: {apiError}</p>}
@@ -42,7 +36,7 @@ export default async function FixturesPage() {
         {worldCupData && <p className="text-sm text-slate-400">Source: {worldCupData.competition.name} ({worldCupData.competition.code})</p>}
 
         {worldCupData && (
-          <VenueMap venues={WORLD_CUP_VENUES} matches={matches} userId={user?.id ?? ''} />
+          <VenueMap venues={WORLD_CUP_VENUES} matches={matches} userId="" />
         )}
 
         {worldCupData && (

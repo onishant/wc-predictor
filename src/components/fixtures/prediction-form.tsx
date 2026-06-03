@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase-browser';
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
 };
 
 export function PredictionForm({ matchExternalId, homeTeam, awayTeam, kickoffUtc, userId }: Props) {
+  const [currentUserId, setCurrentUserId] = useState(userId);
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
   const [result, setResult] = useState<'home' | 'away' | 'draw'>('draw');
@@ -19,11 +20,39 @@ export function PredictionForm({ matchExternalId, homeTeam, awayTeam, kickoffUtc
   const [loading, setLoading] = useState(false);
 
   const isLocked = useMemo(() => new Date() >= new Date(kickoffUtc), [kickoffUtc]);
-  const isSupabaseReady = Boolean(supabase && userId);
+  const isSupabaseReady = Boolean(supabase && currentUserId);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let mounted = true;
+
+    if (!userId) {
+      supabase.auth.getUser().then(({ data }) => {
+        if (mounted) {
+          setCurrentUserId(data.user?.id ?? '');
+        }
+      });
+    }
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserId(session?.user.id ?? '');
+    });
+
+    return () => {
+      mounted = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, [userId]);
 
   async function submitPrediction() {
-    if (!isSupabaseReady) {
+    if (!supabase) {
       setMessage('Prediction storage is unavailable until Supabase auth is configured.');
+      return;
+    }
+
+    if (!currentUserId) {
+      setMessage('Login required to submit predictions.');
       return;
     }
 
@@ -35,15 +64,8 @@ export function PredictionForm({ matchExternalId, homeTeam, awayTeam, kickoffUtc
     setLoading(true);
     setMessage(null);
 
-    const client = supabase;
-    if (!client) {
-      setLoading(false);
-      setMessage('Prediction storage is unavailable until Supabase auth is configured.');
-      return;
-    }
-
-    const { error } = await client.from('predictions').upsert({
-      user_id: userId,
+    const { error } = await supabase.from('predictions').upsert({
+      user_id: currentUserId,
       match_external_id: matchExternalId,
       predicted_result: result,
       pred_home_score: homeScore,
@@ -68,7 +90,7 @@ export function PredictionForm({ matchExternalId, homeTeam, awayTeam, kickoffUtc
         <input type="number" min={0} value={awayScore} onChange={(e) => setAwayScore(Number(e.target.value))} className="rounded border border-slate-700 bg-slate-950 px-2 py-1" />
       </div>
       <button onClick={submitPrediction} disabled={loading || isLocked || !isSupabaseReady} className="mt-3 rounded bg-cyan-500 px-3 py-1 text-sm font-semibold text-slate-950 disabled:opacity-60">
-        {!isSupabaseReady ? 'Unavailable' : isLocked ? 'Locked' : loading ? 'Saving...' : 'Save prediction'}
+        {!supabase ? 'Unavailable' : !currentUserId ? 'Login required' : isLocked ? 'Locked' : loading ? 'Saving...' : 'Save prediction'}
       </button>
       {message && <p className="mt-2 text-xs text-slate-300">{message}</p>}
     </div>

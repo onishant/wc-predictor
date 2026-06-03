@@ -25,7 +25,7 @@ export function AuthPanel() {
 
     try {
       if (mode === 'signup') {
-        const { error } = await supabase!.auth.signUp({
+        const { data, error } = await supabase!.auth.signUp({
           email,
           password,
           options: {
@@ -36,12 +36,17 @@ export function AuthPanel() {
         });
         if (error) throw error;
 
+        if (data.session) {
+          window.location.assign('/fixtures');
+          return;
+        }
+
         setMessage('Signup successful. Check your email if confirmation is enabled.');
       } else {
         const { error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setMessage('Logged in.');
-        window.location.reload();
+        window.location.assign('/fixtures');
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Something went wrong');

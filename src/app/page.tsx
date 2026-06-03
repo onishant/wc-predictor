@@ -1,17 +1,27 @@
+'use client';
+
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase-browser';
 
-export const dynamic = 'force-dynamic';
+export default function Home() {
+  const router = useRouter();
 
-export default async function Home() {
-  if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  useEffect(() => {
+    if (!supabase) return;
 
-    redirect(user ? '/fixtures' : '/auth');
-  }
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      router.replace(data.session ? '/fixtures' : '/auth');
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
