@@ -30,6 +30,18 @@ type MatchesResponse = {
   matches: Match[];
 };
 
+export type WorldCupMatchSummary = {
+  id: number;
+  utcDate: string;
+  status: string;
+  stage?: string;
+  group?: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+};
+
 export type TeamWorldCupStats = {
   teamId: number;
   teamName: string;
@@ -45,17 +57,7 @@ export type TeamWorldCupStats = {
 
 export type WorldCupData = {
   competition: { id: number; code: string; name: string };
-  schedule: Array<{
-    id: number;
-    utcDate: string;
-    status: string;
-    stage?: string;
-    group?: string;
-    homeTeam: string;
-    awayTeam: string;
-    homeScore: number | null;
-    awayScore: number | null;
-  }>;
+  schedule: WorldCupMatchSummary[];
   teamStats: TeamWorldCupStats[];
 };
 
@@ -100,7 +102,7 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
     // include all statuses by default; API returns schedule+results.
   });
 
-  const schedule = data.matches.map((m) => ({
+  const schedule: WorldCupMatchSummary[] = data.matches.map((m) => ({
     id: m.id,
     utcDate: m.utcDate,
     status: m.status,

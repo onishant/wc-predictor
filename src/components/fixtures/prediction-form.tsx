@@ -4,14 +4,14 @@ import { useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase-browser';
 
 type Props = {
-  matchId: string;
+  matchExternalId: string;
   homeTeam: string;
   awayTeam: string;
   kickoffUtc: string;
   userId: string;
 };
 
-export function PredictionForm({ matchId, homeTeam, awayTeam, kickoffUtc, userId }: Props) {
+export function PredictionForm({ matchExternalId, homeTeam, awayTeam, kickoffUtc, userId }: Props) {
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
   const [result, setResult] = useState<'home' | 'away' | 'draw'>('draw');
@@ -19,8 +19,14 @@ export function PredictionForm({ matchId, homeTeam, awayTeam, kickoffUtc, userId
   const [loading, setLoading] = useState(false);
 
   const isLocked = useMemo(() => new Date() >= new Date(kickoffUtc), [kickoffUtc]);
+  const isSupabaseReady = Boolean(supabase && userId);
 
   async function submitPrediction() {
+    if (!isSupabaseReady) {
+      setMessage('Prediction storage is unavailable until Supabase auth is configured.');
+      return;
+    }
+
     if (isLocked) {
       setMessage('Prediction locked: kickoff passed.');
       return;
@@ -29,14 +35,21 @@ export function PredictionForm({ matchId, homeTeam, awayTeam, kickoffUtc, userId
     setLoading(true);
     setMessage(null);
 
-    const { error } = await supabase.from('predictions').upsert({
+    const client = supabase;
+    if (!client) {
+      setLoading(false);
+      setMessage('Prediction storage is unavailable until Supabase auth is configured.');
+      return;
+    }
+
+    const { error } = await client.from('predictions').upsert({
       user_id: userId,
-      match_id: matchId,
+      match_external_id: matchExternalId,
       predicted_result: result,
       pred_home_score: homeScore,
       pred_away_score: awayScore,
       is_locked: false,
-    }, { onConflict: 'user_id,match_id' });
+    }, { onConflict: 'user_id,match_external_id' });
 
     setLoading(false);
     setMessage(error ? error.message : 'Prediction saved.');
@@ -54,8 +67,8 @@ export function PredictionForm({ matchId, homeTeam, awayTeam, kickoffUtc, userId
         </select>
         <input type="number" min={0} value={awayScore} onChange={(e) => setAwayScore(Number(e.target.value))} className="rounded border border-slate-700 bg-slate-950 px-2 py-1" />
       </div>
-      <button onClick={submitPrediction} disabled={loading || isLocked} className="mt-3 rounded bg-cyan-500 px-3 py-1 text-sm font-semibold text-slate-950 disabled:opacity-60">
-        {isLocked ? 'Locked' : loading ? 'Saving...' : 'Save prediction'}
+      <button onClick={submitPrediction} disabled={loading || isLocked || !isSupabaseReady} className="mt-3 rounded bg-cyan-500 px-3 py-1 text-sm font-semibold text-slate-950 disabled:opacity-60">
+        {!isSupabaseReady ? 'Unavailable' : isLocked ? 'Locked' : loading ? 'Saving...' : 'Save prediction'}
       </button>
       {message && <p className="mt-2 text-xs text-slate-300">{message}</p>}
     </div>

@@ -1,11 +1,12 @@
-import { PredictionForm } from '@/components/fixtures/prediction-form';
+import { VenueMap } from '@/components/fixtures/venue-map';
 import { getWorldCupScheduleAndStats } from '@/lib/football-data';
+import { WORLD_CUP_VENUES } from '@/lib/world-cup-venues';
 import { supabase } from '@/lib/supabase';
 
 export default async function FixturesPage() {
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
   let apiError: string | null = null;
   let worldCupData: Awaited<ReturnType<typeof getWorldCupScheduleAndStats>> | null = null;
@@ -19,20 +20,33 @@ export default async function FixturesPage() {
   const matches = worldCupData?.schedule ?? [];
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100">
-      <div className="mx-auto max-w-5xl">
-        <h1 className="text-3xl font-bold">World Cup Fixtures</h1>
-        {!user && <p className="mt-2 text-amber-300">Login required to submit predictions.</p>}
+    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <header className="rounded-[28px] border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">World Cup fixtures</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Pick matches from the map.</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+            The top of the page now shows the host cities and stadium locations first. Select a venue to orient yourself, then scroll into the fixtures to make predictions.
+          </p>
+        </header>
+
+        {!user && (
+          <p className="mt-2 text-amber-300">
+            {!supabase
+              ? 'Supabase auth is not configured yet, so predictions are disabled.'
+              : 'Login required to submit predictions.'}
+          </p>
+        )}
         {apiError && <p className="mt-2 text-red-400">Failed to load World Cup data: {apiError}</p>}
 
+        {worldCupData && <p className="text-sm text-slate-400">Source: {worldCupData.competition.name} ({worldCupData.competition.code})</p>}
+
         {worldCupData && (
-          <p className="mt-2 text-sm text-slate-400">
-            Source: {worldCupData.competition.name} ({worldCupData.competition.code})
-          </p>
+          <VenueMap venues={WORLD_CUP_VENUES} matches={matches} userId={user?.id ?? ''} />
         )}
 
         {worldCupData && (
-          <section className="mt-8">
+          <section className="space-y-3">
             <h2 className="text-xl font-semibold">Team stats (finished matches)</h2>
             <div className="mt-3 overflow-x-auto rounded-xl border border-slate-800">
               <table className="min-w-full text-sm">
@@ -69,39 +83,6 @@ export default async function FixturesPage() {
           </section>
         )}
 
-        <section className="mt-8 space-y-3">
-          <h2 className="text-xl font-semibold">Match schedule</h2>
-          {matches.map((m) => {
-            const kickoffUtc = m.utcDate;
-            const isFinished = m.status === 'FINISHED';
-
-            return (
-              <div key={m.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <p className="text-sm text-slate-400">
-                  {m.stage ?? 'Stage TBD'} {m.group ? `· ${m.group}` : ''} · {new Date(kickoffUtc).toLocaleString()}
-                </p>
-                <h3 className="mt-1 text-lg font-semibold">
-                  {m.homeTeam} vs {m.awayTeam}
-                </h3>
-                <p className="text-sm text-slate-400">Status: {m.status}</p>
-                {isFinished && (
-                  <p className="mt-1 text-sm text-cyan-300">
-                    Final: {m.homeScore ?? '-'} - {m.awayScore ?? '-'}
-                  </p>
-                )}
-                {user && (
-                  <PredictionForm
-                    matchId={String(m.id)}
-                    homeTeam={m.homeTeam}
-                    awayTeam={m.awayTeam}
-                    kickoffUtc={kickoffUtc}
-                    userId={user.id}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </section>
       </div>
     </main>
   );

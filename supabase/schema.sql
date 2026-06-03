@@ -36,14 +36,14 @@ create table if not exists matches (
 create table if not exists predictions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  match_id uuid not null references matches(id) on delete cascade,
+  match_external_id text not null,
   predicted_result text not null check (predicted_result in ('home','away','draw')),
   pred_home_score int not null check (pred_home_score >= 0),
   pred_away_score int not null check (pred_away_score >= 0),
   is_locked boolean default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  unique (user_id, match_id)
+  unique (user_id, match_external_id)
 );
 
 create table if not exists user_progress (
