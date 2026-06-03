@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import Map from 'react-map-gl/maplibre';
+import type { StyleSpecification } from 'maplibre-gl';
 import { PredictionForm } from '@/components/fixtures/prediction-form';
 import { buildVenueRouting } from '@/lib/fixture-venue-routing';
 import type { WorldCupMatchSummary } from '@/lib/football-data';
@@ -24,7 +25,29 @@ type Viewport = {
   transitionDuration?: number;
 };
 
+type MapMode = 'map' | 'satellite';
+
 const CARTO_DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const ESRI_SATELLITE_STYLE = {
+  version: 8,
+  sources: {
+    'esri-world-imagery': {
+      type: 'raster',
+      tiles: [
+        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: 'Tiles © Esri',
+    },
+  },
+  layers: [
+    {
+      id: 'esri-world-imagery',
+      type: 'raster',
+      source: 'esri-world-imagery',
+    },
+  ],
+} satisfies StyleSpecification;
 
 function venueColor(country: string) {
   switch (country) {
@@ -48,8 +71,25 @@ function venueRingColor(country: string) {
   }
 }
 
+function venueOverviewZoom(venue: WorldCupVenue) {
+  return venue.country === 'Canada' ? 3.1 : 3.7;
+}
+
+function venueFocusZoom(mapMode: MapMode, venue: WorldCupVenue) {
+  if (mapMode === 'satellite') {
+    return 14.6;
+  }
+
+  if (venue.id === 'vancouver' || venue.id === 'seattle') {
+    return 3.2;
+  }
+
+  return venueOverviewZoom(venue);
+}
+
 export function VenueMap({ venues, matches, userId }: Props) {
   const [selectedVenueId, setSelectedVenueId] = useState(venues[0]?.id ?? '');
+  const [mapMode, setMapMode] = useState<MapMode>('map');
   const [viewState, setViewState] = useState<Viewport>({
     latitude: 39.5,
     longitude: -98.35,
@@ -137,7 +177,8 @@ export function VenueMap({ venues, matches, userId }: Props) {
         ...current,
         latitude: object.latitude,
         longitude: object.longitude,
-        zoom: object.id === 'vancouver' || object.id === 'seattle' ? 3.2 : 3.7,
+        zoom: venueFocusZoom(mapMode, object),
+        pitch: mapMode === 'satellite' ? 0 : current.pitch,
         transitionDuration: 500,
       }));
     },
@@ -205,7 +246,7 @@ export function VenueMap({ venues, matches, userId }: Props) {
             >
               <Map
                 reuseMaps
-                mapStyle={CARTO_DARK_STYLE}
+                mapStyle={mapMode === 'satellite' ? ESRI_SATELLITE_STYLE : CARTO_DARK_STYLE}
                 attributionControl={false}
                 dragRotate={false}
                 cooperativeGestures
@@ -218,11 +259,42 @@ export function VenueMap({ venues, matches, userId }: Props) {
                 North America
               </span>
               <span className="rounded-full border border-slate-700 bg-slate-950/80 px-3 py-1 text-xs text-slate-300 backdrop-blur">
-                CARTO basemap
+                {mapMode === 'satellite' ? 'Satellite imagery' : 'CARTO basemap'}
               </span>
               <span className="rounded-full border border-slate-700 bg-slate-950/80 px-3 py-1 text-xs text-slate-300 backdrop-blur">
                 Match-count markers
               </span>
+            </div>
+
+            <div className="absolute right-4 top-4 flex rounded-full border border-slate-700 bg-slate-950/85 p-1 text-xs text-slate-300 shadow-lg backdrop-blur">
+              {(['map', 'satellite'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={mapMode === mode}
+                  onClick={() => {
+                    setMapMode(mode);
+                    if (!selectedVenue) {
+                      return;
+                    }
+
+                    setViewState((current) => ({
+                      ...current,
+                      latitude: selectedVenue.latitude,
+                      longitude: selectedVenue.longitude,
+                      zoom: venueFocusZoom(mode, selectedVenue),
+                      pitch: mode === 'satellite' ? 0 : 28,
+                      bearing: 0,
+                      transitionDuration: 500,
+                    }));
+                  }}
+                  className={`rounded-full px-3 py-1.5 font-medium capitalize transition ${
+                    mapMode === mode ? 'bg-cyan-400 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -309,7 +381,8 @@ export function VenueMap({ venues, matches, userId }: Props) {
                       ...current,
                       latitude: venue.latitude,
                       longitude: venue.longitude,
-                      zoom: venue.country === 'Canada' ? 3.1 : 3.7,
+                      zoom: venueFocusZoom(mapMode, venue),
+                      pitch: mapMode === 'satellite' ? 0 : current.pitch,
                       transitionDuration: 450,
                     }));
                   }}
