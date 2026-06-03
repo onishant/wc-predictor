@@ -6,6 +6,7 @@ import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import Map from 'react-map-gl/maplibre';
 import type { StyleSpecification } from 'maplibre-gl';
 import { PredictionForm } from '@/components/fixtures/prediction-form';
+import { TeamBadge } from '@/components/fixtures/team-badge';
 import { buildVenueRouting } from '@/lib/fixture-venue-routing';
 import type { WorldCupMatchSummary } from '@/lib/football-data';
 import type { WorldCupVenue } from '@/lib/world-cup-venues';
@@ -343,9 +344,11 @@ export function VenueMap({ venues, matches, userId }: Props) {
                       <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
                         {index + 1}. {new Date(match.utcDate).toLocaleString()}
                       </p>
-                      <h4 className="mt-1 text-lg font-semibold text-slate-50">
-                        {match.homeTeam} vs {match.awayTeam}
-                      </h4>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <TeamBadge team={match.homeTeamVisual} />
+                        <span className="text-xs uppercase tracking-[0.16em] text-slate-500">vs</span>
+                        <TeamBadge team={match.awayTeamVisual} />
+                      </div>
                       <p className="text-sm text-slate-400">
                         {match.stage ?? 'Stage TBD'} {match.group ? `· ${match.group}` : ''} · {match.status}
                       </p>
@@ -353,6 +356,8 @@ export function VenueMap({ venues, matches, userId }: Props) {
                         matchExternalId={String(match.id)}
                         homeTeam={match.homeTeam}
                         awayTeam={match.awayTeam}
+                        homeTeamVisual={match.homeTeamVisual}
+                        awayTeamVisual={match.awayTeamVisual}
                         kickoffUtc={match.utcDate}
                         userId={userId}
                       />

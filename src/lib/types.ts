@@ -13,4 +13,7 @@ export type TeamRow = {
   id: string;
   name: string;
   code: string | null;
+  crest_url: string | null;
+  logo_url: string | null;
+  flag_url: string | null;
 };

@@ -3,6 +3,61 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const FOOTBALL_DATA_BASE_URL = 'https://api.football-data.org/v4';
+const FIFA_TLA_TO_FLAG_CODE = {
+  ALG: 'dz',
+  ARG: 'ar',
+  AUS: 'au',
+  AUT: 'at',
+  BEL: 'be',
+  BIH: 'ba',
+  BRA: 'br',
+  CAN: 'ca',
+  CIV: 'ci',
+  COD: 'cd',
+  COL: 'co',
+  CPV: 'cv',
+  CRO: 'hr',
+  CUW: 'cw',
+  CZE: 'cz',
+  ECU: 'ec',
+  EGY: 'eg',
+  ENG: 'gb-eng',
+  ESP: 'es',
+  FRA: 'fr',
+  GER: 'de',
+  GHA: 'gh',
+  HAI: 'ht',
+  IRN: 'ir',
+  IRQ: 'iq',
+  JOR: 'jo',
+  JPN: 'jp',
+  KOR: 'kr',
+  KSA: 'sa',
+  MAR: 'ma',
+  MEX: 'mx',
+  NED: 'nl',
+  NOR: 'no',
+  NZL: 'nz',
+  PAN: 'pa',
+  PAR: 'py',
+  POR: 'pt',
+  QAT: 'qa',
+  RSA: 'za',
+  SCO: 'gb-sct',
+  SEN: 'sn',
+  SUI: 'ch',
+  SWE: 'se',
+  TUN: 'tn',
+  TUR: 'tr',
+  URY: 'uy',
+  USA: 'us',
+  UZB: 'uz',
+};
+
+function getFlagUrlForTeamCode(code) {
+  const flagCode = code ? FIFA_TLA_TO_FLAG_CODE[String(code).toUpperCase()] : null;
+  return flagCode ? `https://flagcdn.com/${flagCode}.svg` : null;
+}
 
 function loadDotEnvLocal() {
   const envPath = path.resolve(process.cwd(), '.env.local');
@@ -103,6 +158,9 @@ async function main() {
         ext_id: String(t.id),
         name: t.name,
         code: t.tla ?? null,
+        crest_url: t.crest ?? null,
+        logo_url: t.crest ?? null,
+        flag_url: getFlagUrlForTeamCode(t.tla),
       });
     }
   }
@@ -111,7 +169,7 @@ async function main() {
 
   const { data: existingTeams, error: existingTeamsErr } = await supabase
     .from('teams')
-    .select('id, name, code, crest_url');
+    .select('id, name, code, crest_url, logo_url, flag_url');
   if (existingTeamsErr) throw existingTeamsErr;
 
   const teamIdByExt = new Map();
@@ -120,6 +178,18 @@ async function main() {
     const existing = existingTeams.find((t) => t.name === team.name || (team.code && t.code === team.code));
 
     if (existing) {
+      const { error: updateErr } = await supabase
+        .from('teams')
+        .update({
+          name: team.name,
+          code: team.code,
+          crest_url: team.crest_url,
+          logo_url: team.logo_url,
+          flag_url: team.flag_url,
+        })
+        .eq('id', existing.id);
+
+      if (updateErr) throw updateErr;
       teamIdByExt.set(team.ext_id, existing.id);
       continue;
     }
@@ -129,7 +199,9 @@ async function main() {
       .insert({
         name: team.name,
         code: team.code,
-        crest_url: null,
+        crest_url: team.crest_url,
+        logo_url: team.logo_url,
+        flag_url: team.flag_url,
       })
       .select('id')
       .single();

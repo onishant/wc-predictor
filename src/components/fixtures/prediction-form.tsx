@@ -1,17 +1,29 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { TeamBadge } from '@/components/fixtures/team-badge';
 import { supabase } from '@/lib/supabase-browser';
+import type { TeamVisual } from '@/lib/team-visuals';
 
 type Props = {
   matchExternalId: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamVisual?: TeamVisual;
+  awayTeamVisual?: TeamVisual;
   kickoffUtc: string;
   userId: string;
 };
 
-export function PredictionForm({ matchExternalId, homeTeam, awayTeam, kickoffUtc, userId }: Props) {
+export function PredictionForm({
+  matchExternalId,
+  homeTeam,
+  awayTeam,
+  homeTeamVisual,
+  awayTeamVisual,
+  kickoffUtc,
+  userId,
+}: Props) {
   const [currentUserId, setCurrentUserId] = useState(userId);
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
@@ -79,7 +91,11 @@ export function PredictionForm({ matchExternalId, homeTeam, awayTeam, kickoffUtc
 
   return (
     <div className="mt-3 rounded-lg border border-slate-800 p-3">
-      <p className="mb-2 text-sm text-slate-400">{homeTeam} vs {awayTeam}</p>
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-slate-400">
+        <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="sm" />
+        <span className="text-xs uppercase tracking-[0.16em] text-slate-500">vs</span>
+        <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="sm" />
+      </div>
       <div className="grid grid-cols-3 gap-2">
         <input type="number" min={0} value={homeScore} onChange={(e) => setHomeScore(Number(e.target.value))} className="rounded border border-slate-700 bg-slate-950 px-2 py-1" />
         <select value={result} onChange={(e) => setResult(e.target.value as 'home' | 'away' | 'draw')} className="rounded border border-slate-700 bg-slate-950 px-2 py-1">

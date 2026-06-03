@@ -1,3 +1,5 @@
+import { getFlagUrlForTeamCode, type TeamVisual } from '@/lib/team-visuals';
+
 const FOOTBALL_DATA_BASE_URL = 'https://api.football-data.org/v4';
 
 const apiKey = process.env.FOOTBALL_DATA_API_KEY;
@@ -7,7 +9,7 @@ if (!apiKey) {
   console.warn('FOOTBALL_DATA_API_KEY is not set. football-data requests will fail.');
 }
 
-type TeamRef = { id: number; name: string; shortName?: string; tla?: string };
+type TeamRef = { id: number; name: string; shortName?: string; tla?: string; crest?: string };
 
 type Match = {
   id: number;
@@ -38,6 +40,8 @@ export type WorldCupMatchSummary = {
   group?: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamVisual: TeamVisual;
+  awayTeamVisual: TeamVisual;
   homeScore: number | null;
   awayScore: number | null;
 };
@@ -45,6 +49,7 @@ export type WorldCupMatchSummary = {
 export type TeamWorldCupStats = {
   teamId: number;
   teamName: string;
+  teamVisual: TeamVisual;
   played: number;
   won: number;
   drawn: number;
@@ -92,6 +97,16 @@ async function footballDataFetch<T>(path: string, searchParams?: Record<string, 
   return response.json() as Promise<T>;
 }
 
+function toTeamVisual(team: TeamRef): TeamVisual {
+  return {
+    name: team.name,
+    code: team.tla ?? null,
+    crestUrl: team.crest ?? null,
+    logoUrl: team.crest ?? null,
+    flagUrl: getFlagUrlForTeamCode(team.tla),
+  };
+}
+
 /**
  * Pulls FIFA World Cup schedule + computes team summary stats from finished WC matches.
  * Uses competition code WC per football-data lookup tables.
@@ -110,6 +125,8 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
     group: m.group,
     homeTeam: m.homeTeam.name,
     awayTeam: m.awayTeam.name,
+    homeTeamVisual: toTeamVisual(m.homeTeam),
+    awayTeamVisual: toTeamVisual(m.awayTeam),
     homeScore: m.score?.fullTime?.home ?? null,
     awayScore: m.score?.fullTime?.away ?? null,
   }));
@@ -121,6 +138,7 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
       statsByTeam.set(team.id, {
         teamId: team.id,
         teamName: team.name,
+        teamVisual: toTeamVisual(team),
         played: 0,
         won: 0,
         drawn: 0,

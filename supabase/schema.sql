@@ -14,6 +14,8 @@ create table if not exists teams (
   code text,
   group_name text,
   crest_url text,
+  logo_url text,
+  flag_url text,
   created_at timestamptz default now()
 );
 

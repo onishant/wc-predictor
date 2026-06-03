@@ -1,4 +1,5 @@
 import { VenueMap } from '@/components/fixtures/venue-map';
+import { TeamBadge } from '@/components/fixtures/team-badge';
 import { getWorldCupScheduleAndStats } from '@/lib/football-data';
 import { WORLD_CUP_VENUES } from '@/lib/world-cup-venues';
 import { supabase } from '@/lib/supabase';
@@ -60,7 +61,9 @@ export default async function FixturesPage() {
                 <tbody>
                   {worldCupData.teamStats.map((t) => (
                     <tr key={t.teamId} className="border-t border-slate-800 bg-slate-950">
-                      <td className="px-3 py-2">{t.teamName}</td>
+                      <td className="px-3 py-2">
+                        <TeamBadge team={t.teamVisual} size="sm" />
+                      </td>
                       <td className="px-3 py-2 text-right">{t.played}</td>
                       <td className="px-3 py-2 text-right">{t.won}</td>
                       <td className="px-3 py-2 text-right">{t.drawn}</td>
