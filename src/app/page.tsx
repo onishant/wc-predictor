@@ -1,6 +1,18 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  if (supabase) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    redirect(user ? '/fixtures' : '/auth');
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-16">

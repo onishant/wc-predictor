@@ -25,12 +25,16 @@ export function AuthPanel() {
 
     try {
       if (mode === 'signup') {
-        const { data, error } = await supabase!.auth.signUp({ email, password });
+        const { error } = await supabase!.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username: username.trim(),
+            },
+          },
+        });
         if (error) throw error;
-
-        if (data.user && username.trim()) {
-          await supabase!.from('users_profile').upsert({ id: data.user.id, username: username.trim() });
-        }
 
         setMessage('Signup successful. Check your email if confirmation is enabled.');
       } else {
