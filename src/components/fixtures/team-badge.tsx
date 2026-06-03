@@ -11,6 +11,7 @@ export function TeamBadge({ team, size = 'md' }: Props) {
   const flagUrl = team.flagUrl ?? getFlagUrlForTeamCode(team.code);
   const imageSize = size === 'sm' ? 'h-6 w-6' : 'h-8 w-8';
   const textSize = size === 'sm' ? 'text-sm' : 'text-base';
+  const teamName = team.name || 'TBD';
 
   return (
     <span className="inline-flex min-w-0 items-center gap-2 align-middle">
@@ -19,7 +20,7 @@ export function TeamBadge({ team, size = 'md' }: Props) {
           <Image src={imageUrl} alt="" fill className="object-contain p-1" sizes="32px" unoptimized />
         ) : (
           <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-300">
-            {team.code ?? team.name.slice(0, 2).toUpperCase()}
+            {team.code ?? teamName.slice(0, 2).toUpperCase()}
           </span>
         )}
         {flagUrl && imageUrl !== flagUrl && (
@@ -33,7 +34,7 @@ export function TeamBadge({ team, size = 'md' }: Props) {
           />
         )}
       </span>
-      <span className={`min-w-0 truncate font-medium text-slate-50 ${textSize}`}>{team.name}</span>
+      <span className={`min-w-0 truncate font-medium text-slate-50 ${textSize}`}>{teamName}</span>
     </span>
   );
 }

@@ -9,7 +9,7 @@ if (!apiKey) {
   console.warn('FOOTBALL_DATA_API_KEY is not set. football-data requests will fail.');
 }
 
-type TeamRef = { id: number; name: string; shortName?: string; tla?: string; crest?: string };
+type TeamRef = { id?: number | null; name?: string | null; shortName?: string | null; tla?: string | null; crest?: string | null };
 
 type Match = {
   id: number;
@@ -97,13 +97,13 @@ async function footballDataFetch<T>(path: string, searchParams?: Record<string, 
   return response.json() as Promise<T>;
 }
 
-function toTeamVisual(team: TeamRef): TeamVisual {
+function toTeamVisual(team: TeamRef | null | undefined, fallbackName = 'TBD'): TeamVisual {
   return {
-    name: team.name,
-    code: team.tla ?? null,
-    crestUrl: team.crest ?? null,
-    logoUrl: team.crest ?? null,
-    flagUrl: getFlagUrlForTeamCode(team.tla),
+    name: team?.name ?? fallbackName,
+    code: team?.tla ?? null,
+    crestUrl: team?.crest ?? null,
+    logoUrl: team?.crest ?? null,
+    flagUrl: getFlagUrlForTeamCode(team?.tla),
   };
 }
 
@@ -123,8 +123,8 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
     status: m.status,
     stage: m.stage,
     group: m.group,
-    homeTeam: m.homeTeam.name,
-    awayTeam: m.awayTeam.name,
+    homeTeam: m.homeTeam?.name ?? 'TBD',
+    awayTeam: m.awayTeam?.name ?? 'TBD',
     homeTeamVisual: toTeamVisual(m.homeTeam),
     awayTeamVisual: toTeamVisual(m.awayTeam),
     homeScore: m.score?.fullTime?.home ?? null,
@@ -134,6 +134,10 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
   const statsByTeam = new Map<number, TeamWorldCupStats>();
 
   const getOrCreate = (team: TeamRef) => {
+    if (!team.id || !team.name) {
+      return null;
+    }
+
     if (!statsByTeam.has(team.id)) {
       statsByTeam.set(team.id, {
         teamId: team.id,
@@ -161,6 +165,7 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
 
     const home = getOrCreate(match.homeTeam);
     const away = getOrCreate(match.awayTeam);
+    if (!home || !away) continue;
 
     home.played += 1;
     away.played += 1;
