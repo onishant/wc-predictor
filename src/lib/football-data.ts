@@ -132,8 +132,8 @@ async function footballDataFetch<T>(path: string, searchParams?: Record<string, 
       // Per docs: API token must be sent using X-Auth-Token header.
       'X-Auth-Token': apiKey,
     },
-    // Avoid stale schedule data in server components.
-    cache: 'no-store',
+    // Keep normal browsing from exhausting the provider's strict request limit.
+    next: { revalidate: 300 },
   });
 
   if (!response.ok) {

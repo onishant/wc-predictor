@@ -3,8 +3,11 @@ import { notFound } from 'next/navigation';
 import { AppNav } from '@/components/app-nav';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { FormStrip } from '@/components/teams/form-strip';
+import { ProjectedLineupView } from '@/components/teams/projected-lineup';
 import { getWorldCupScheduleAndStats, getWorldCupTeamProfiles } from '@/lib/football-data';
+import { projectStartingEleven } from '@/lib/team-lineup';
 import { getFlagUrlForTeamCode } from '@/lib/team-visuals';
+import { getWorldCupTrivia } from '@/lib/world-cup-trivia';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -21,6 +24,8 @@ export default async function TeamPage({ params }: Props) {
 
   const stats = worldCup.teamStats.find((row) => row.teamId === team.id);
   const positions = countPositions(team.squad);
+  const lineup = projectStartingEleven(team.squad);
+  const trivia = getWorldCupTrivia(team.code);
   const ages = team.squad.map((player) => getAge(player.dateOfBirth)).filter((age): age is number => age !== null);
   const averageAge = ages.length ? (ages.reduce((sum, age) => sum + age, 0) / ages.length).toFixed(1) : '—';
   const visual = {
@@ -61,32 +66,40 @@ export default async function TeamPage({ params }: Props) {
           <p className="mt-3 text-xs text-slate-500">The current data provider does not include international friendlies, qualifiers, or player match ratings.</p>
         </section>
 
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+          <div>
+            <div className="mb-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">4-3-3 projection</p>
+              <h2 className="mt-1 text-xl font-semibold">Predicted starting eleven</h2>
+              <p className="mt-2 text-xs leading-5 text-slate-400">Projection based on listed position and an experience/prime-age heuristic. It is not an official lineup.</p>
+            </div>
+            <ProjectedLineupView lineup={lineup} />
+          </div>
+
+          <aside className="h-fit rounded-2xl border border-amber-800/70 bg-gradient-to-b from-amber-950/60 to-slate-900 p-5 lg:sticky lg:top-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-400">Past World Cups</p>
+            <h2 className="mt-2 text-xl font-semibold text-amber-50">{trivia.headline}</h2>
+            <ul className="mt-4 space-y-4 text-sm leading-6 text-amber-100/80">
+              {trivia.facts.map((fact) => <li key={fact} className="border-l-2 border-amber-500/50 pl-3">{fact}</li>)}
+            </ul>
+          </aside>
+        </section>
+
         <section>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-            <h2 className="text-xl font-semibold">Player squad</h2>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Matchday squad</p>
+              <h2 className="mt-1 text-xl font-semibold">Predicted substitutes</h2>
+            </div>
             <p className="text-xs text-slate-400">{Object.entries(positions).map(([position, count]) => `${count} ${position}`).join(' · ')}</p>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-900 text-slate-300">
-                <tr>
-                  <th className="px-4 py-3 text-left">Player</th>
-                  <th className="px-4 py-3 text-left">Position</th>
-                  <th className="px-4 py-3 text-left">Nationality</th>
-                  <th className="px-4 py-3 text-right">Age</th>
-                </tr>
-              </thead>
-              <tbody>
-                {team.squad.map((player) => (
-                  <tr key={player.id} className="border-t border-slate-800 bg-slate-950">
-                    <td className="px-4 py-3 font-medium text-slate-100">{player.name}</td>
-                    <td className="px-4 py-3 text-slate-300">{player.position ?? 'Not listed'}</td>
-                    <td className="px-4 py-3 text-slate-300">{player.nationality ?? 'Not listed'}</td>
-                    <td className="px-4 py-3 text-right text-slate-300">{getAge(player.dateOfBirth) ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {lineup.substitutes.map((player) => (
+              <div key={player.id} className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+                <p className="font-medium text-slate-100">{player.name}</p>
+                <p className="mt-1 text-xs text-slate-400">{player.position ?? 'Position not listed'} · Age {getAge(player.dateOfBirth) ?? '—'}</p>
+              </div>
+            ))}
           </div>
         </section>
       </div>
