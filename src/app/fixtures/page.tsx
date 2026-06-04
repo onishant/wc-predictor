@@ -2,16 +2,18 @@ import { VenueMap } from '@/components/fixtures/venue-map';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { AppNav } from '@/components/app-nav';
 import { FormStrip } from '@/components/teams/form-strip';
-import { getWorldCupScheduleAndStats } from '@/lib/football-data';
+import { getWorldCupData } from '@/lib/world-cup-data';
 import { WORLD_CUP_VENUES } from '@/lib/world-cup-venues';
 import { supabase } from '@/lib/supabase';
 
+export const revalidate = 300;
+
 export default async function FixturesPage() {
   let apiError: string | null = null;
-  let worldCupData: Awaited<ReturnType<typeof getWorldCupScheduleAndStats>> | null = null;
+  let worldCupData: Awaited<ReturnType<typeof getWorldCupData>> | null = null;
 
   try {
-    worldCupData = await getWorldCupScheduleAndStats();
+    worldCupData = await getWorldCupData();
   } catch (error) {
     apiError = error instanceof Error ? error.message : 'Unknown API error';
   }
@@ -35,9 +37,9 @@ export default async function FixturesPage() {
             Supabase auth is not configured yet, so predictions are disabled.
           </p>
         )}
-        {apiError && <p className="mt-2 text-red-400">Failed to load World Cup data: {apiError}</p>}
+        {apiError && <p className="mt-2 text-red-400">Failed to load World Cup data from Supabase: {apiError}</p>}
 
-        {worldCupData && <p className="text-sm text-slate-400">Source: {worldCupData.competition.name} ({worldCupData.competition.code})</p>}
+        {worldCupData && <p className="text-sm text-slate-400">Source: Supabase · Last refreshed by the World Cup sync</p>}
 
         {worldCupData && (
           <VenueMap venues={WORLD_CUP_VENUES} matches={matches} userId="" />

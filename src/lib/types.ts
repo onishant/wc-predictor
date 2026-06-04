@@ -1,5 +1,6 @@
 export type MatchRow = {
   id: string;
+  external_match_id?: string | null;
   stage: string | null;
   kickoff_utc: string;
   status: string;

@@ -4,10 +4,10 @@ import { AppNav } from '@/components/app-nav';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { FormStrip } from '@/components/teams/form-strip';
 import { ProjectedLineupView } from '@/components/teams/projected-lineup';
-import { getWorldCupScheduleAndStats, getWorldCupTeamProfiles } from '@/lib/football-data';
 import { projectStartingEleven } from '@/lib/team-lineup';
 import { getFlagUrlForTeamCode } from '@/lib/team-visuals';
 import { getWorldCupTrivia } from '@/lib/world-cup-trivia';
+import { getWorldCupData, getWorldCupTeamProfile } from '@/lib/world-cup-data';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -15,11 +15,10 @@ type Props = {
 
 export default async function TeamPage({ params }: Props) {
   const { id } = await params;
-  const [profiles, worldCup] = await Promise.all([
-    getWorldCupTeamProfiles(),
-    getWorldCupScheduleAndStats(),
+  const [team, worldCup] = await Promise.all([
+    getWorldCupTeamProfile(id),
+    getWorldCupData(),
   ]);
-  const team = profiles.find((profile) => String(profile.id) === id);
   if (!team) notFound();
 
   const stats = worldCup.teamStats.find((row) => row.teamId === team.id);

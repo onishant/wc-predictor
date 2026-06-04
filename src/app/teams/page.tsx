@@ -2,13 +2,15 @@ import Link from 'next/link';
 import { AppNav } from '@/components/app-nav';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { FormStrip } from '@/components/teams/form-strip';
-import { getWorldCupScheduleAndStats, getWorldCupTeamProfiles } from '@/lib/football-data';
 import { getFlagUrlForTeamCode } from '@/lib/team-visuals';
+import { getWorldCupData, getWorldCupTeamProfiles } from '@/lib/world-cup-data';
+
+export const revalidate = 300;
 
 export default async function TeamsPage() {
   const [profiles, worldCup] = await Promise.all([
     getWorldCupTeamProfiles(),
-    getWorldCupScheduleAndStats(),
+    getWorldCupData(),
   ]);
   const statsByTeam = new Map(worldCup.teamStats.map((stats) => [stats.teamId, stats]));
 

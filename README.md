@@ -1,5 +1,22 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Data sync
+
+The app reads World Cup teams, players, matches, stats, and form from Supabase. Football-data is only used by the sync jobs.
+
+Required server environment variables:
+
+```bash
+FOOTBALL_DATA_API_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+WC_SEASON=2026
+CRON_SECRET=
+```
+
+Vercel calls `/api/cron/sync-world-cup` daily at 04:00 UTC. Vercel sends `CRON_SECRET` as a bearer token; the route rejects requests without it.
+
 ## Getting Started
 
 First, run the development server:
