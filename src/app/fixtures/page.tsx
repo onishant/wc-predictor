@@ -1,5 +1,7 @@
 import { VenueMap } from '@/components/fixtures/venue-map';
 import { TeamBadge } from '@/components/fixtures/team-badge';
+import { AppNav } from '@/components/app-nav';
+import { FormStrip } from '@/components/teams/form-strip';
 import { getWorldCupScheduleAndStats } from '@/lib/football-data';
 import { WORLD_CUP_VENUES } from '@/lib/world-cup-venues';
 import { supabase } from '@/lib/supabase';
@@ -19,6 +21,7 @@ export default async function FixturesPage() {
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <AppNav />
         <header className="rounded-[28px] border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">World Cup fixtures</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Pick matches from the map.</h1>
@@ -56,6 +59,7 @@ export default async function FixturesPage() {
                     <th className="px-3 py-2 text-right">GA</th>
                     <th className="px-3 py-2 text-right">GD</th>
                     <th className="px-3 py-2 text-right">Pts</th>
+                    <th className="px-3 py-2 text-left">Form</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -72,6 +76,7 @@ export default async function FixturesPage() {
                       <td className="px-3 py-2 text-right">{t.goalsAgainst}</td>
                       <td className="px-3 py-2 text-right">{t.goalDifference}</td>
                       <td className="px-3 py-2 text-right font-semibold text-cyan-300">{t.points}</td>
+                      <td className="px-3 py-2"><FormStrip form={t.recentForm} /></td>
                     </tr>
                   ))}
                 </tbody>

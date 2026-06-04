@@ -10,14 +10,35 @@ create table if not exists users_profile (
 
 create table if not exists teams (
   id uuid primary key default gen_random_uuid(),
+  external_team_id text unique,
   name text not null,
   code text,
   group_name text,
   crest_url text,
   logo_url text,
   flag_url text,
+  coach_name text,
+  founded int,
+  website text,
+  club_colors text,
+  venue text,
   created_at timestamptz default now()
 );
+
+create table if not exists players (
+  id uuid primary key default gen_random_uuid(),
+  external_player_id text unique not null,
+  team_id uuid not null references teams(id) on delete cascade,
+  name text not null,
+  position text,
+  date_of_birth date,
+  nationality text,
+  shirt_number int,
+  last_synced_at timestamptz default now(),
+  created_at timestamptz default now()
+);
+
+create index if not exists players_team_id_idx on players(team_id);
 
 create table if not exists matches (
   id uuid primary key default gen_random_uuid(),

@@ -128,6 +128,21 @@ async function fetchWorldCupMatches(season) {
   return res.json();
 }
 
+async function fetchWorldCupTeams(season) {
+  const url = new URL(`${FOOTBALL_DATA_BASE_URL}/competitions/WC/teams`);
+  if (season) url.searchParams.set('season', String(season));
+
+  const res = await fetch(url.toString(), {
+    headers: { 'X-Auth-Token': FOOTBALL_DATA_API_KEY },
+  });
+
+  if (!res.ok) {
+    throw new Error(`football-data error ${res.status}: ${await res.text()}`);
+  }
+
+  return res.json();
+}
+
 function normalizeStatus(status) {
   switch (status) {
     case 'FINISHED':
@@ -147,14 +162,37 @@ function normalizeStatus(status) {
 }
 
 async function main() {
-  const payload = await fetchWorldCupMatches(WC_SEASON);
+  const [payload, teamsPayload] = await Promise.all([
+    fetchWorldCupMatches(WC_SEASON),
+    fetchWorldCupTeams(WC_SEASON),
+  ]);
   const matches = payload.matches ?? [];
 
   const teamsByExternalId = new Map();
+  for (const t of teamsPayload.teams ?? []) {
+    teamsByExternalId.set(String(t.id), {
+      ext_id: String(t.id),
+      name: t.name,
+      code: t.tla ?? null,
+      crest_url: t.crest ?? null,
+      logo_url: t.crest ?? null,
+      flag_url: getFlagUrlForTeamCode(t.tla),
+      coach_name: t.coach?.name ?? null,
+      founded: t.founded ?? null,
+      website: t.website ?? null,
+      club_colors: t.clubColors ?? null,
+      venue: t.venue ?? null,
+      squad: t.squad ?? [],
+    });
+  }
+
   for (const m of matches) {
     for (const t of [m.homeTeam, m.awayTeam]) {
       if (!t?.id) continue;
-      teamsByExternalId.set(String(t.id), {
+      const externalId = String(t.id);
+      const existing = teamsByExternalId.get(externalId);
+      teamsByExternalId.set(externalId, {
+        ...existing,
         ext_id: String(t.id),
         name: t.name,
         code: t.tla ?? null,
@@ -169,23 +207,31 @@ async function main() {
 
   const { data: existingTeams, error: existingTeamsErr } = await supabase
     .from('teams')
-    .select('id, name, code, crest_url, logo_url, flag_url');
+    .select('id, external_team_id, name, code, crest_url, logo_url, flag_url');
   if (existingTeamsErr) throw existingTeamsErr;
 
   const teamIdByExt = new Map();
 
   for (const team of teamRows) {
-    const existing = existingTeams.find((t) => t.name === team.name || (team.code && t.code === team.code));
+    const existing = existingTeams.find((t) =>
+      t.external_team_id === team.ext_id || t.name === team.name || (team.code && t.code === team.code)
+    );
 
     if (existing) {
       const { error: updateErr } = await supabase
         .from('teams')
         .update({
+          external_team_id: team.ext_id,
           name: team.name,
           code: team.code,
           crest_url: team.crest_url,
           logo_url: team.logo_url,
           flag_url: team.flag_url,
+          coach_name: team.coach_name ?? null,
+          founded: team.founded ?? null,
+          website: team.website ?? null,
+          club_colors: team.club_colors ?? null,
+          venue: team.venue ?? null,
         })
         .eq('id', existing.id);
 
@@ -197,17 +243,56 @@ async function main() {
     const { data: inserted, error: insertErr } = await supabase
       .from('teams')
       .insert({
+        external_team_id: team.ext_id,
         name: team.name,
         code: team.code,
         crest_url: team.crest_url,
         logo_url: team.logo_url,
         flag_url: team.flag_url,
+        coach_name: team.coach_name ?? null,
+        founded: team.founded ?? null,
+        website: team.website ?? null,
+        club_colors: team.club_colors ?? null,
+        venue: team.venue ?? null,
       })
       .select('id')
       .single();
 
     if (insertErr) throw insertErr;
     teamIdByExt.set(team.ext_id, inserted.id);
+  }
+
+  const syncedAt = new Date().toISOString();
+  const playerRows = teamRows.flatMap((team) => {
+    const teamId = teamIdByExt.get(team.ext_id);
+    if (!teamId) return [];
+
+    return (team.squad ?? []).map((player) => ({
+      external_player_id: String(player.id),
+      team_id: teamId,
+      name: player.name,
+      position: player.position ?? null,
+      date_of_birth: player.dateOfBirth ?? null,
+      nationality: player.nationality ?? null,
+      shirt_number: player.shirtNumber ?? null,
+      last_synced_at: syncedAt,
+    }));
+  });
+
+  const syncedTeamIds = [...teamIdByExt.values()];
+  if (syncedTeamIds.length > 0) {
+    const { error: deletePlayersErr } = await supabase
+      .from('players')
+      .delete()
+      .in('team_id', syncedTeamIds);
+    if (deletePlayersErr) throw deletePlayersErr;
+  }
+
+  if (playerRows.length > 0) {
+    const { error: playersErr } = await supabase
+      .from('players')
+      .upsert(playerRows, { onConflict: 'external_player_id' });
+    if (playersErr) throw playersErr;
   }
 
   const matchRows = matches
@@ -237,7 +322,7 @@ async function main() {
 
   if (upsertErr) throw upsertErr;
 
-  console.log(`Synced ${teamRows.length} teams and ${matchRows.length} matches into Supabase.`);
+  console.log(`Synced ${teamRows.length} teams, ${playerRows.length} players, and ${matchRows.length} matches into Supabase.`);
 }
 
 main().catch((err) => {

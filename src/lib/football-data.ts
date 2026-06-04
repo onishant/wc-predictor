@@ -32,6 +32,52 @@ type MatchesResponse = {
   matches: Match[];
 };
 
+export type WorldCupPlayer = {
+  id: number;
+  name: string;
+  position: string | null;
+  dateOfBirth: string | null;
+  nationality: string | null;
+  shirtNumber: number | null;
+};
+
+export type WorldCupTeamProfile = {
+  id: number;
+  name: string;
+  shortName: string | null;
+  code: string | null;
+  crestUrl: string | null;
+  coachName: string | null;
+  founded: number | null;
+  website: string | null;
+  clubColors: string | null;
+  venue: string | null;
+  squad: WorldCupPlayer[];
+};
+
+type TeamsResponse = {
+  teams: Array<{
+    id: number;
+    name: string;
+    shortName?: string | null;
+    tla?: string | null;
+    crest?: string | null;
+    coach?: { name?: string | null } | null;
+    founded?: number | null;
+    website?: string | null;
+    clubColors?: string | null;
+    venue?: string | null;
+    squad?: Array<{
+      id: number;
+      name: string;
+      position?: string | null;
+      dateOfBirth?: string | null;
+      nationality?: string | null;
+      shirtNumber?: number | null;
+    }>;
+  }>;
+};
+
 export type WorldCupMatchSummary = {
   id: number;
   utcDate: string;
@@ -58,6 +104,7 @@ export type TeamWorldCupStats = {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
+  recentForm: Array<'W' | 'D' | 'L'>;
 };
 
 export type WorldCupData = {
@@ -151,6 +198,7 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
         goalsAgainst: 0,
         goalDifference: 0,
         points: 0,
+        recentForm: [],
       });
     }
     return statsByTeam.get(team.id)!;
@@ -179,20 +227,26 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
       home.won += 1;
       home.points += 3;
       away.lost += 1;
+      home.recentForm.push('W');
+      away.recentForm.push('L');
     } else if (awayGoals > homeGoals) {
       away.won += 1;
       away.points += 3;
       home.lost += 1;
+      home.recentForm.push('L');
+      away.recentForm.push('W');
     } else {
       home.drawn += 1;
       away.drawn += 1;
       home.points += 1;
       away.points += 1;
+      home.recentForm.push('D');
+      away.recentForm.push('D');
     }
   }
 
   const teamStats = [...statsByTeam.values()]
-    .map((s) => ({ ...s, goalDifference: s.goalsFor - s.goalsAgainst }))
+    .map((s) => ({ ...s, goalDifference: s.goalsFor - s.goalsAgainst, recentForm: s.recentForm.slice(-5) }))
     .sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor || a.teamName.localeCompare(b.teamName));
 
   return {
@@ -200,4 +254,33 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
     schedule,
     teamStats,
   };
+}
+
+export async function getWorldCupTeamProfiles(options?: { season?: number }): Promise<WorldCupTeamProfile[]> {
+  const data = await footballDataFetch<TeamsResponse>('/competitions/WC/teams', {
+    season: options?.season,
+  });
+
+  return data.teams
+    .map((team) => ({
+      id: team.id,
+      name: team.name,
+      shortName: team.shortName ?? null,
+      code: team.tla ?? null,
+      crestUrl: team.crest ?? null,
+      coachName: team.coach?.name ?? null,
+      founded: team.founded ?? null,
+      website: team.website ?? null,
+      clubColors: team.clubColors ?? null,
+      venue: team.venue ?? null,
+      squad: (team.squad ?? []).map((player) => ({
+        id: player.id,
+        name: player.name,
+        position: player.position ?? null,
+        dateOfBirth: player.dateOfBirth ?? null,
+        nationality: player.nationality ?? null,
+        shirtNumber: player.shirtNumber ?? null,
+      })),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
