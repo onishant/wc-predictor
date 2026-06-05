@@ -115,8 +115,183 @@ function CharacterModel({
   return (
     <group ref={group} position={[0, -1, 0]} rotation={[Math.PI, Math.PI - 0.25, Math.PI]} scale={1.7}>
       <primitive object={scene} />
+      <AvatarIdentityKit avatarId={avatarId} accent={accent} />
       <AvatarFeature featureId={featureId} accent={accent} />
       {(featureId === 'football' || avatarHasBuiltInFootball(avatarId)) && <FootballProp mood={mood} accent={accent} />}
+    </group>
+  );
+}
+
+function AvatarIdentityKit({ avatarId, accent }: { avatarId: AvatarId; accent: string }) {
+  if (avatarId === 'striker') {
+    return (
+      <group>
+        <BootPair accent={accent} />
+        <mesh position={[0.02, 0.08, -0.28]} rotation={[0.18, 0, -0.32]}>
+          <boxGeometry args={[0.16, 0.72, 0.035]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.35} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (avatarId === 'keeper') {
+    return (
+      <group>
+        <KeeperGloves accent={accent} />
+        <mesh position={[0, 0.98, -0.08]} rotation={[0, 0, 0]}>
+          <torusGeometry args={[0.28, 0.028, 10, 40]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.45} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (avatarId === 'captain') {
+    return (
+      <group>
+        <mesh position={[0.43, 0.58, -0.03]} rotation={[0.2, 0.2, 0.15]}>
+          <boxGeometry args={[0.24, 0.09, 0.045]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.65} />
+        </mesh>
+        <mesh position={[0, -0.48, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.66, 0.026, 12, 64]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.45} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (avatarId === 'footballer') {
+    return (
+      <group>
+        <BootPair accent={accent} />
+        <mesh position={[-0.34, 0.46, -0.05]} rotation={[0.15, 0, -0.2]}>
+          <boxGeometry args={[0.18, 0.08, 0.04]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (avatarId === 'playmaker') {
+    return (
+      <group>
+        <mesh position={[0, 0.18, -0.27]} rotation={[0.18, 0, 0.58]}>
+          <boxGeometry args={[0.14, 0.82, 0.04]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.4} />
+        </mesh>
+        <mesh position={[0, -0.62, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.42, 0.02, 10, 50]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.6} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (avatarId === 'winger') {
+    return (
+      <group>
+        <BootPair accent={accent} />
+        <mesh position={[-0.72, -0.12, 0]} rotation={[0, 0.1, Math.PI / 2]}>
+          <coneGeometry args={[0.08, 0.5, 3]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.75} transparent opacity={0.72} />
+        </mesh>
+        <mesh position={[-0.92, -0.38, 0.02]} rotation={[0, 0.1, Math.PI / 2]}>
+          <coneGeometry args={[0.06, 0.36, 3]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.6} transparent opacity={0.62} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (avatarId === 'defender') {
+    return (
+      <group>
+        <mesh position={[-0.36, 0.47, -0.02]} rotation={[0.1, 0, -0.25]}>
+          <boxGeometry args={[0.22, 0.14, 0.08]} />
+          <meshStandardMaterial color={accent} roughness={0.35} />
+        </mesh>
+        <mesh position={[0.36, 0.47, -0.02]} rotation={[0.1, 0, 0.25]}>
+          <boxGeometry args={[0.22, 0.14, 0.08]} />
+          <meshStandardMaterial color={accent} roughness={0.35} />
+        </mesh>
+        <mesh position={[0, -0.46, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.6, 0.03, 12, 60]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.38} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (avatarId === 'sweeper') {
+    return (
+      <group>
+        <KeeperGloves accent={accent} />
+        <mesh position={[0, 0.82, -0.22]}>
+          <boxGeometry args={[0.46, 0.06, 0.045]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.6} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (avatarId === 'finisher') {
+    return (
+      <group>
+        <BootPair accent={accent} />
+        <mesh position={[0.42, 0.78, -0.08]} rotation={[0.2, 0.1, 0.2]}>
+          <octahedronGeometry args={[0.12, 0]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.95} />
+        </mesh>
+        <mesh position={[0, -0.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.72, 0.018, 10, 72]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+    );
+  }
+
+  return (
+    <group>
+      <mesh position={[0, 1.04, -0.05]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.31, 0.025, 10, 48]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.85} />
+      </mesh>
+      <mesh position={[0.62, 0.38, -0.08]} rotation={[0.1, 0.1, 0.82]}>
+        <cylinderGeometry args={[0.025, 0.025, 0.55, 12]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.55} />
+      </mesh>
+    </group>
+  );
+}
+
+function BootPair({ accent }: { accent: string }) {
+  return (
+    <group>
+      <mesh position={[-0.18, -0.92, -0.04]} rotation={[0, 0.1, -0.05]}>
+        <boxGeometry args={[0.22, 0.08, 0.09]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.42} />
+      </mesh>
+      <mesh position={[0.2, -0.92, -0.04]} rotation={[0, -0.1, 0.05]}>
+        <boxGeometry args={[0.22, 0.08, 0.09]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.42} />
+      </mesh>
+    </group>
+  );
+}
+
+function KeeperGloves({ accent }: { accent: string }) {
+  return (
+    <group>
+      <mesh position={[-0.46, 0.25, -0.08]} scale={[1.2, 0.75, 0.8]}>
+        <sphereGeometry args={[0.1, 16, 16]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.38} />
+      </mesh>
+      <mesh position={[0.46, 0.25, -0.08]} scale={[1.2, 0.75, 0.8]}>
+        <sphereGeometry args={[0.1, 16, 16]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.38} />
+      </mesh>
     </group>
   );
 }
