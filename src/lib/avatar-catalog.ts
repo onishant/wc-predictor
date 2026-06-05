@@ -1,6 +1,16 @@
 import type { CharacterMood } from '@/lib/character-progress';
 
-export type AvatarId = 'striker' | 'keeper' | 'captain';
+export type AvatarId =
+  | 'striker'
+  | 'keeper'
+  | 'captain'
+  | 'footballer'
+  | 'playmaker'
+  | 'winger'
+  | 'defender'
+  | 'sweeper'
+  | 'finisher'
+  | 'maestro';
 export type AvatarFeatureId = 'none' | 'football' | 'clubAura' | 'captainBand' | 'championGlow';
 export type AvatarUnlockId = CharacterMood | Exclude<AvatarFeatureId, 'none'>;
 
@@ -22,12 +32,16 @@ export const DEFAULT_AVATAR_PROFILE: AvatarProfile = {
   xpSpent: 0,
 };
 
+const CURRENT_MIXAMO_MODEL = '/assets/characters/mixamo/Pumpkinhulk_L_Shaw_TPose.glb';
+
 export const AVATAR_ARCHETYPES: Array<{
   id: AvatarId;
   name: string;
   description: string;
   accent: string;
   defaultGesture: CharacterMood;
+  modelPath: string;
+  builtInFootball?: boolean;
 }> = [
   {
     id: 'striker',
@@ -35,6 +49,7 @@ export const AVATAR_ARCHETYPES: Array<{
     description: 'Fast, loud, built for big-score weeks.',
     accent: '#22d3ee',
     defaultGesture: 'idle',
+    modelPath: CURRENT_MIXAMO_MODEL,
   },
   {
     id: 'keeper',
@@ -42,6 +57,7 @@ export const AVATAR_ARCHETYPES: Array<{
     description: 'Calm under pressure, rewards clean streaks.',
     accent: '#38bdf8',
     defaultGesture: 'goalkeeperCatchMedium',
+    modelPath: CURRENT_MIXAMO_MODEL,
   },
   {
     id: 'captain',
@@ -49,6 +65,64 @@ export const AVATAR_ARCHETYPES: Array<{
     description: 'A leaderboard-first avatar for consistent predictors.',
     accent: '#f59e0b',
     defaultGesture: 'excited',
+    modelPath: CURRENT_MIXAMO_MODEL,
+  },
+  {
+    id: 'footballer',
+    name: 'Footballer',
+    description: 'Starter avatar with the ball visible from day one.',
+    accent: '#16a34a',
+    defaultGesture: 'jogging',
+    modelPath: CURRENT_MIXAMO_MODEL,
+    builtInFootball: true,
+  },
+  {
+    id: 'playmaker',
+    name: 'Playmaker',
+    description: 'Controlled, creative, built for smart calls.',
+    accent: '#a3e635',
+    defaultGesture: 'excited',
+    modelPath: CURRENT_MIXAMO_MODEL,
+  },
+  {
+    id: 'winger',
+    name: 'Winger',
+    description: 'Quick movement and high-risk prediction energy.',
+    accent: '#fb7185',
+    defaultGesture: 'jogging',
+    modelPath: CURRENT_MIXAMO_MODEL,
+  },
+  {
+    id: 'defender',
+    name: 'Defender',
+    description: 'Steady picks, clean streaks, no panic.',
+    accent: '#60a5fa',
+    defaultGesture: 'idle',
+    modelPath: CURRENT_MIXAMO_MODEL,
+  },
+  {
+    id: 'sweeper',
+    name: 'Sweeper',
+    description: 'Reads the board early and covers every angle.',
+    accent: '#2dd4bf',
+    defaultGesture: 'goalkeeperCatchHigh',
+    modelPath: CURRENT_MIXAMO_MODEL,
+  },
+  {
+    id: 'finisher',
+    name: 'Finisher',
+    description: 'For exact-score hunters and late winners.',
+    accent: '#f97316',
+    defaultGesture: 'victory',
+    modelPath: CURRENT_MIXAMO_MODEL,
+  },
+  {
+    id: 'maestro',
+    name: 'Maestro',
+    description: 'Premium feel for long streaks and composed picks.',
+    accent: '#c084fc',
+    defaultGesture: 'excited',
+    modelPath: CURRENT_MIXAMO_MODEL,
   },
 ];
 
@@ -82,9 +156,25 @@ export function getAvatarAccent(avatarId: AvatarId) {
   return AVATAR_ARCHETYPES.find((avatar) => avatar.id === avatarId)?.accent ?? AVATAR_ARCHETYPES[0].accent;
 }
 
+export function getAvatarModel(avatarId: AvatarId) {
+  return AVATAR_ARCHETYPES.find((avatar) => avatar.id === avatarId)?.modelPath ?? CURRENT_MIXAMO_MODEL;
+}
+
+export function getAvatarName(avatarId: AvatarId) {
+  return AVATAR_ARCHETYPES.find((avatar) => avatar.id === avatarId)?.name ?? AVATAR_ARCHETYPES[0].name;
+}
+
+export function avatarHasBuiltInFootball(avatarId: AvatarId) {
+  return AVATAR_ARCHETYPES.find((avatar) => avatar.id === avatarId)?.builtInFootball ?? false;
+}
+
+export function isAvatarId(value?: string | null): value is AvatarId {
+  return AVATAR_ARCHETYPES.some((avatar) => avatar.id === value);
+}
+
 export function normalizeAvatarProfile(profile?: Partial<AvatarProfile> | null): AvatarProfile {
   return {
-    selectedAvatarId: profile?.selectedAvatarId ?? DEFAULT_AVATAR_PROFILE.selectedAvatarId,
+    selectedAvatarId: isAvatarId(profile?.selectedAvatarId) ? profile.selectedAvatarId : DEFAULT_AVATAR_PROFILE.selectedAvatarId,
     equippedGesture: profile?.equippedGesture ?? DEFAULT_AVATAR_PROFILE.equippedGesture,
     equippedFeature: profile?.equippedFeature ?? DEFAULT_AVATAR_PROFILE.equippedFeature,
     unlockedGestures: profile?.unlockedGestures?.length ? profile.unlockedGestures : DEFAULT_AVATAR_PROFILE.unlockedGestures,

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AppNav } from '@/components/app-nav';
 import { MixamoCharacterStage } from '@/components/characters/mixamo-character-stage';
+import { getAvatarName, isAvatarId } from '@/lib/avatar-catalog';
 import type { AvatarFeatureId, AvatarId } from '@/lib/avatar-catalog';
 import type { CharacterMood } from '@/lib/character-progress';
 import { supabase } from '@/lib/supabase';
@@ -203,7 +204,7 @@ function toCharacterMood(value?: string | null): CharacterMood | null {
 }
 
 function toAvatarId(value?: string | null): AvatarId {
-  if (value === 'keeper' || value === 'captain' || value === 'striker') return value;
+  if (isAvatarId(value)) return value;
   return 'striker';
 }
 
@@ -215,7 +216,7 @@ function toFeatureId(value?: string | null): AvatarFeatureId {
 function avatarLabel(row: LeaderboardRow) {
   const avatar = toAvatarId(row.selected_avatar_id);
   const feature = toFeatureId(row.equipped_feature);
-  const avatarName = avatar === 'keeper' ? 'Keeper' : avatar === 'captain' ? 'Captain' : 'Striker';
+  const avatarName = getAvatarName(avatar);
   if (feature === 'none') return avatarName;
 
   const featureName =

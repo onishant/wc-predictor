@@ -5,7 +5,7 @@ import { ContactShadows, Environment, useAnimations, useGLTF } from '@react-thre
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import type { Group } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { getAvatarAccent } from '@/lib/avatar-catalog';
+import { AVATAR_ARCHETYPES, avatarHasBuiltInFootball, getAvatarAccent, getAvatarModel } from '@/lib/avatar-catalog';
 import type { AvatarFeatureId, AvatarId } from '@/lib/avatar-catalog';
 import type { CharacterMood } from '@/lib/character-progress';
 import manifest from '../../../public/assets/characters/mixamo/manifest.json';
@@ -45,7 +45,7 @@ export function MixamoCharacterStage({
         <Suspense fallback={null}>
           <ambientLight intensity={1.35} />
           <directionalLight position={[3, 4, 3]} intensity={2.4} />
-          <CharacterModel mood={mood} accent={accent} featureId={featureId} />
+          <CharacterModel mood={mood} avatarId={avatarId} accent={accent} featureId={featureId} />
           <ContactShadows position={[0, -1.28, 0]} opacity={0.36} scale={5} blur={2.4} far={2.2} />
           <Environment preset="city" />
         </Suspense>
@@ -59,15 +59,17 @@ export function MixamoCharacterStage({
 
 function CharacterModel({
   mood,
+  avatarId,
   accent,
   featureId,
 }: {
   mood: CharacterMood;
+  avatarId: AvatarId;
   accent: string;
   featureId: AvatarFeatureId;
 }) {
   const group = useRef<Group>(null);
-  const character = useGLTF(manifest.character.model);
+  const character = useGLTF(getAvatarModel(avatarId));
   const idle = useGLTF(manifest.animations.idle);
   const excited = useGLTF(manifest.animations.excited);
   const victory = useGLTF(manifest.animations.victory);
@@ -114,7 +116,7 @@ function CharacterModel({
     <group ref={group} position={[0, -1, 0]} rotation={[Math.PI, Math.PI - 0.25, Math.PI]} scale={1.7}>
       <primitive object={scene} />
       <AvatarFeature featureId={featureId} accent={accent} />
-      {featureId === 'football' && <FootballProp mood={mood} accent={accent} />}
+      {(featureId === 'football' || avatarHasBuiltInFootball(avatarId)) && <FootballProp mood={mood} accent={accent} />}
     </group>
   );
 }
@@ -209,5 +211,5 @@ function FootballProp({ mood, accent }: { mood: CharacterMood; accent: string })
   );
 }
 
-useGLTF.preload(manifest.character.model);
+AVATAR_ARCHETYPES.forEach((avatar) => useGLTF.preload(avatar.modelPath));
 animationOrder.forEach((key) => useGLTF.preload(manifest.animations[key]));
