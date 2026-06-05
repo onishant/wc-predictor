@@ -84,6 +84,36 @@ create table if not exists user_progress (
   updated_at timestamptz default now()
 );
 
+create table if not exists user_avatar_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  selected_avatar_id text not null default 'striker',
+  equipped_gesture text not null default 'idle',
+  equipped_feature text not null default 'none',
+  unlocked_gestures jsonb not null default '["idle"]'::jsonb,
+  unlocked_features jsonb not null default '[]'::jsonb,
+  xp_spent int not null default 0,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table user_avatar_profiles enable row level security;
+
+drop policy if exists "Users can read avatar profiles" on user_avatar_profiles;
+create policy "Users can read avatar profiles"
+on user_avatar_profiles for select
+using (true);
+
+drop policy if exists "Users can insert their avatar profile" on user_avatar_profiles;
+create policy "Users can insert their avatar profile"
+on user_avatar_profiles for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their avatar profile" on user_avatar_profiles;
+create policy "Users can update their avatar profile"
+on user_avatar_profiles for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
 -- Simple updated_at trigger
 create or replace function set_updated_at()
 returns trigger as $$
@@ -101,6 +131,11 @@ for each row execute function set_updated_at();
 drop trigger if exists set_predictions_updated_at on predictions;
 create trigger set_predictions_updated_at
 before update on predictions
+for each row execute function set_updated_at();
+
+drop trigger if exists set_user_avatar_profiles_updated_at on user_avatar_profiles;
+create trigger set_user_avatar_profiles_updated_at
+before update on user_avatar_profiles
 for each row execute function set_updated_at();
 
 -- Create profile/progress rows automatically when a Supabase auth user signs up.
@@ -147,6 +182,10 @@ begin
   values (new.id)
   on conflict (user_id) do nothing;
 
+  insert into public.user_avatar_profiles (user_id)
+  values (new.id)
+  on conflict (user_id) do nothing;
+
   return new;
 end;
 $$ language plpgsql;
@@ -166,7 +205,11 @@ select
   coalesce(up.current_streak, 0) as current_streak,
   coalesce(up.best_streak, 0) as best_streak,
   coalesce(up.character_tier, 'Rookie') as character_tier,
-  p.username
+  p.username,
+  coalesce(ap.selected_avatar_id, 'striker') as selected_avatar_id,
+  coalesce(ap.equipped_gesture, 'idle') as equipped_gesture,
+  coalesce(ap.equipped_feature, 'none') as equipped_feature
 from user_progress up
 left join users_profile p on p.id = up.user_id
+left join user_avatar_profiles ap on ap.user_id = up.user_id
 order by up.points desc, up.xp desc;

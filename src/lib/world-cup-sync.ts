@@ -269,7 +269,7 @@ async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatc
     return {
       user_id: userId,
       points,
-      xp: sortedPredictions.length * 10,
+      xp: points * 10,
       current_streak: currentStreak,
       best_streak: bestStreak,
       character_tier: getCharacterTier(points),

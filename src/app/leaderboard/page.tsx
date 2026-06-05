@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AppNav } from '@/components/app-nav';
 import { MixamoCharacterStage } from '@/components/characters/mixamo-character-stage';
-import { UserCharacterStage } from '@/components/characters/user-character-stage';
+import type { AvatarFeatureId, AvatarId } from '@/lib/avatar-catalog';
 import type { CharacterMood } from '@/lib/character-progress';
 import { supabase } from '@/lib/supabase';
 
@@ -13,6 +13,9 @@ type LeaderboardRow = {
   best_streak: number;
   character_tier: string;
   username: string | null;
+  selected_avatar_id?: string | null;
+  equipped_gesture?: string | null;
+  equipped_feature?: string | null;
 };
 
 function tierColor(tier: string) {
@@ -46,7 +49,7 @@ export default async function LeaderboardPage() {
   const { data, error } = supabase
     ? await supabase
         .from('leaderboard')
-        .select('user_id, points, xp, current_streak, best_streak, character_tier, username')
+        .select('user_id, points, xp, current_streak, best_streak, character_tier, username, selected_avatar_id, equipped_gesture, equipped_feature')
         .order('points', { ascending: false })
         .order('xp', { ascending: false })
     : { data: [], error: null };
@@ -62,7 +65,7 @@ export default async function LeaderboardPage() {
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <AppNav />
-        <header className="grid gap-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
+        <header className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur">
           <div className="flex flex-col gap-3">
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">World Cup predictor</p>
@@ -81,9 +84,11 @@ export default async function LeaderboardPage() {
               <Link href="/auth" className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400">
                 Login / Sign up
               </Link>
+              <Link href="/avatar" className="rounded-full border border-cyan-700 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-950/50">
+                Configure avatar
+              </Link>
             </div>
           </div>
-          <UserCharacterStage fallbackMood="victory" height="sm" label="Leaderboard avatar" />
         </header>
 
         {!supabase && (
@@ -102,7 +107,9 @@ export default async function LeaderboardPage() {
           {topThree.map((row) => (
             <article key={row.user_id} className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
               <MixamoCharacterStage
-                mood={tierMood(row.character_tier, row.rank)}
+                mood={toCharacterMood(row.equipped_gesture) ?? tierMood(row.character_tier, row.rank)}
+                avatarId={toAvatarId(row.selected_avatar_id)}
+                featureId={toFeatureId(row.equipped_feature)}
                 height="sm"
                 label={`Rank #${row.rank} avatar`}
               />
@@ -138,6 +145,7 @@ export default async function LeaderboardPage() {
                 <tr>
                   <th className="px-5 py-3 font-medium">Rank</th>
                   <th className="px-5 py-3 font-medium">Player</th>
+                  <th className="px-5 py-3 font-medium">Avatar</th>
                   <th className="px-5 py-3 font-medium">Tier</th>
                   <th className="px-5 py-3 font-medium text-right">Points</th>
                   <th className="px-5 py-3 font-medium text-right">XP</th>
@@ -150,6 +158,7 @@ export default async function LeaderboardPage() {
                   <tr key={row.user_id} className="border-t border-slate-800 hover:bg-slate-800/50">
                     <td className="px-5 py-3 font-medium text-slate-300">#{row.rank}</td>
                     <td className="px-5 py-3">{row.username ?? 'Anonymous'}</td>
+                    <td className="px-5 py-3 text-slate-300">{avatarLabel(row)}</td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tierColor(row.character_tier)}`}>
                         {row.character_tier}
@@ -163,7 +172,7 @@ export default async function LeaderboardPage() {
                 ))}
                 {rows.length === 0 && !error && (
                   <tr>
-                    <td className="px-5 py-6 text-slate-400" colSpan={7}>
+                    <td className="px-5 py-6 text-slate-400" colSpan={8}>
                       No leaderboard data yet. Run predictions and update <code className="rounded bg-slate-800 px-1.5 py-0.5 text-[0.8em]">user_progress</code> to populate this table.
                     </td>
                   </tr>
@@ -175,6 +184,47 @@ export default async function LeaderboardPage() {
       </div>
     </main>
   );
+}
+
+function toCharacterMood(value?: string | null): CharacterMood | null {
+  if (
+    value === 'idle' ||
+    value === 'excited' ||
+    value === 'victory' ||
+    value === 'defeat' ||
+    value === 'jogging' ||
+    value === 'goalkeeperCatchMedium' ||
+    value === 'goalkeeperCatchHigh'
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+function toAvatarId(value?: string | null): AvatarId {
+  if (value === 'keeper' || value === 'captain' || value === 'striker') return value;
+  return 'striker';
+}
+
+function toFeatureId(value?: string | null): AvatarFeatureId {
+  if (value === 'clubAura' || value === 'captainBand' || value === 'championGlow') return value;
+  return 'none';
+}
+
+function avatarLabel(row: LeaderboardRow) {
+  const avatar = toAvatarId(row.selected_avatar_id);
+  const feature = toFeatureId(row.equipped_feature);
+  const avatarName = avatar === 'keeper' ? 'Keeper' : avatar === 'captain' ? 'Captain' : 'Striker';
+  if (feature === 'none') return avatarName;
+
+  const featureName = feature === 'clubAura'
+    ? 'Club aura'
+    : feature === 'captainBand'
+      ? 'Captain band'
+      : 'Champion glow';
+
+  return `${avatarName} · ${featureName}`;
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

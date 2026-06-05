@@ -1,5 +1,4 @@
 import { VenueMap } from '@/components/fixtures/venue-map';
-import { UserCharacterStage } from '@/components/characters/user-character-stage';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { AppNav } from '@/components/app-nav';
 import { FormStrip } from '@/components/teams/form-strip';
@@ -25,15 +24,12 @@ export default async function FixturesPage() {
     <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <AppNav />
-        <header className="grid gap-6 rounded-[28px] border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">World Cup fixtures</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Pick matches from the map.</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
-              The top of the page now shows the host cities and stadium locations first. Select a venue to orient yourself, then scroll into the fixtures to make predictions.
-            </p>
-          </div>
-          <UserCharacterStage fallbackMood="idle" height="sm" label="Matchday avatar" />
+        <header className="rounded-[28px] border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">World Cup fixtures</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Pick matches from the map.</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+            The top of the page now shows the host cities and stadium locations first. Select a venue to orient yourself, then scroll into the fixtures to make predictions.
+          </p>
         </header>
 
         {!supabase && (

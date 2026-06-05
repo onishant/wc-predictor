@@ -9,6 +9,9 @@ export function AppNav() {
       <Link href="/teams" className="rounded-lg border border-slate-700 px-3 py-2 text-slate-200 hover:border-cyan-500 hover:text-cyan-300">
         Teams
       </Link>
+      <Link href="/avatar" className="rounded-lg border border-slate-700 px-3 py-2 text-slate-200 hover:border-cyan-500 hover:text-cyan-300">
+        Avatar
+      </Link>
       <Link href="/leaderboard" className="rounded-lg border border-slate-700 px-3 py-2 text-slate-200 hover:border-cyan-500 hover:text-cyan-300">
         Leaderboard
       </Link>
