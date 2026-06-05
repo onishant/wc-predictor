@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { AppNav } from '@/components/app-nav';
+import { MixamoCharacterStage } from '@/components/characters/mixamo-character-stage';
+import type { CharacterMood } from '@/components/characters/mixamo-character-stage';
 import { supabase } from '@/lib/supabase';
 
 type LeaderboardRow = {
@@ -24,6 +27,20 @@ function tierColor(tier: string) {
   }
 }
 
+function tierMood(tier: string, rank: number): CharacterMood {
+  if (rank === 1) return 'victory';
+
+  switch (tier.toLowerCase()) {
+    case 'legend':
+    case 'elite':
+      return 'excited';
+    case 'pro':
+      return 'jogging';
+    default:
+      return 'idle';
+  }
+}
+
 export default async function LeaderboardPage() {
   const { data, error } = supabase
     ? await supabase
@@ -43,8 +60,9 @@ export default async function LeaderboardPage() {
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-4 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <AppNav />
+        <header className="grid gap-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
+          <div className="flex flex-col gap-3">
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">World Cup predictor</p>
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Leaderboard</h1>
@@ -64,6 +82,7 @@ export default async function LeaderboardPage() {
               </Link>
             </div>
           </div>
+          <MixamoCharacterStage mood="victory" height="sm" label="Leaderboard avatar" />
         </header>
 
         {!supabase && (
@@ -81,7 +100,12 @@ export default async function LeaderboardPage() {
         <section className="grid gap-4 md:grid-cols-3">
           {topThree.map((row) => (
             <article key={row.user_id} className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
-              <div className="flex items-start justify-between gap-3">
+              <MixamoCharacterStage
+                mood={tierMood(row.character_tier, row.rank)}
+                height="sm"
+                label={`Rank #${row.rank} avatar`}
+              />
+              <div className="mt-4 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Rank #{row.rank}</p>
                   <h2 className="mt-1 text-xl font-semibold">{row.username ?? 'Anonymous'}</h2>

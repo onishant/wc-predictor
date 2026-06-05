@@ -1,0 +1,17 @@
+{
+  "source": "Adobe Mixamo",
+  "character": {
+    "id": "pumpkinhulk-l-shaw",
+    "name": "Pumpkinhulk L Shaw",
+    "model": "/assets/characters/mixamo/Pumpkinhulk_L_Shaw_TPose.glb"
+  },
+  "animations": {
+    "idle": "/assets/characters/mixamo/Idle_WithoutSkin_30fps.glb",
+    "excited": "/assets/characters/mixamo/Excited_WithoutSkin_30fps.glb",
+    "victory": "/assets/characters/mixamo/Victory_WithoutSkin_30fps.glb",
+    "defeat": "/assets/characters/mixamo/Defeat_Reaction_WithoutSkin_30fps.glb",
+    "jogging": "/assets/characters/mixamo/Jogging_WithoutSkin_30fps.glb",
+    "goalkeeperCatchMedium": "/assets/characters/mixamo/Goalkeeper_Catch_Medium_WithoutSkin_30fps.glb",
+    "goalkeeperCatchHigh": "/assets/characters/mixamo/Goalkeeper_Catch_High_WithoutSkin_30fps.glb"
+  }
+}
