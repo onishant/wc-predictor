@@ -1,5 +1,5 @@
 import { VenueMap } from '@/components/fixtures/venue-map';
-import { MixamoCharacterStage } from '@/components/characters/mixamo-character-stage';
+import { UserCharacterStage } from '@/components/characters/user-character-stage';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { AppNav } from '@/components/app-nav';
 import { FormStrip } from '@/components/teams/form-strip';
@@ -33,7 +33,7 @@ export default async function FixturesPage() {
               The top of the page now shows the host cities and stadium locations first. Select a venue to orient yourself, then scroll into the fixtures to make predictions.
             </p>
           </div>
-          <MixamoCharacterStage mood="idle" height="sm" label="Matchday avatar" />
+          <UserCharacterStage fallbackMood="idle" height="sm" label="Matchday avatar" />
         </header>
 
         {!supabase && (

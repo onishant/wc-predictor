@@ -5,9 +5,8 @@ import { ContactShadows, Environment, useAnimations, useGLTF } from '@react-thre
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import type { Group } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import type { CharacterMood } from '@/lib/character-progress';
 import manifest from '../../../public/assets/characters/mixamo/manifest.json';
-
-export type CharacterMood = keyof typeof manifest.animations;
 
 type MixamoCharacterStageProps = {
   mood?: CharacterMood;

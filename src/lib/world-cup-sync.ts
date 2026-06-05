@@ -1,4 +1,5 @@
 import 'server-only';
+import { getCharacterTier } from '@/lib/character-progress';
 import { hasSupabaseServiceRole, supabaseAdmin } from '@/lib/supabase-admin';
 import { getFlagUrlForTeamCode } from '@/lib/team-visuals';
 
@@ -35,6 +36,24 @@ type ProviderMatch = {
   homeTeam?: ProviderTeam | null;
   awayTeam?: ProviderTeam | null;
   score?: { fullTime?: { home?: number | null; away?: number | null } };
+};
+
+type FinishedMatchRow = {
+  external_match_id: string | null;
+  kickoff_utc: string;
+  status: string;
+  home_score: number | null;
+  away_score: number | null;
+};
+
+type PredictionSettlementRow = {
+  id: string;
+  user_id: string;
+  match_external_id: string;
+  predicted_result: 'home' | 'away' | 'draw';
+  pred_home_score: number;
+  pred_away_score: number;
+  points_awarded: number;
 };
 
 type TeamSyncRow = {
@@ -166,7 +185,117 @@ export async function syncWorldCup() {
     .upsert(matchRows, { onConflict: 'external_match_id' });
   if (matchesError) throw matchesError;
 
-  return { teams: teamRows.length, players: playerRows.length, matches: matchRows.length, syncedAt };
+  const settledPredictions = await settleFinishedMatchPredictions(syncedAt);
+
+  return { teams: teamRows.length, players: playerRows.length, matches: matchRows.length, settledPredictions, syncedAt };
+}
+
+async function settleFinishedMatchPredictions(settledAt: string) {
+  const { data: finishedMatches, error: matchesError } = await supabaseAdmin
+    .from('matches')
+    .select('external_match_id, kickoff_utc, status, home_score, away_score')
+    .eq('status', 'finished')
+    .not('external_match_id', 'is', null)
+    .not('home_score', 'is', null)
+    .not('away_score', 'is', null)
+    .returns<FinishedMatchRow[]>();
+  if (matchesError) throw matchesError;
+
+  const matchesByExternalId = new Map((finishedMatches ?? []).map((match) => [match.external_match_id as string, match]));
+  const finishedExternalIds = [...matchesByExternalId.keys()];
+  if (finishedExternalIds.length === 0) return 0;
+
+  const { data: unsettledPredictions, error: predictionsError } = await supabaseAdmin
+    .from('predictions')
+    .select('id, user_id, match_external_id, predicted_result, pred_home_score, pred_away_score, points_awarded')
+    .is('settled_at', null)
+    .in('match_external_id', finishedExternalIds)
+    .returns<PredictionSettlementRow[]>();
+  if (predictionsError) throw predictionsError;
+
+  for (const prediction of unsettledPredictions ?? []) {
+    const match = matchesByExternalId.get(prediction.match_external_id);
+    if (!match || match.home_score == null || match.away_score == null) continue;
+
+    const pointsAwarded = scorePrediction(prediction, match.home_score, match.away_score);
+    const { error } = await supabaseAdmin
+      .from('predictions')
+      .update({ points_awarded: pointsAwarded, settled_at: settledAt, is_locked: true })
+      .eq('id', prediction.id);
+    if (error) throw error;
+  }
+
+  await rebuildUserProgress(matchesByExternalId);
+
+  return unsettledPredictions?.length ?? 0;
+}
+
+async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatchRow>) {
+  const { data: settledPredictions, error } = await supabaseAdmin
+    .from('predictions')
+    .select('id, user_id, match_external_id, predicted_result, pred_home_score, pred_away_score, points_awarded')
+    .not('settled_at', 'is', null)
+    .returns<PredictionSettlementRow[]>();
+  if (error) throw error;
+
+  const predictionsByUser = new Map<string, PredictionSettlementRow[]>();
+  for (const prediction of settledPredictions ?? []) {
+    const userPredictions = predictionsByUser.get(prediction.user_id) ?? [];
+    userPredictions.push(prediction);
+    predictionsByUser.set(prediction.user_id, userPredictions);
+  }
+
+  const progressRows = [...predictionsByUser.entries()].map(([userId, predictions]) => {
+    const sortedPredictions = predictions.sort((a, b) => {
+      const aMatch = matchesByExternalId.get(a.match_external_id);
+      const bMatch = matchesByExternalId.get(b.match_external_id);
+      return (aMatch?.kickoff_utc ?? '').localeCompare(bMatch?.kickoff_utc ?? '');
+    });
+
+    let points = 0;
+    let currentStreak = 0;
+    let bestStreak = 0;
+
+    for (const prediction of sortedPredictions) {
+      points += prediction.points_awarded;
+      if (prediction.points_awarded > 0) {
+        currentStreak += 1;
+        bestStreak = Math.max(bestStreak, currentStreak);
+      } else {
+        currentStreak = 0;
+      }
+    }
+
+    return {
+      user_id: userId,
+      points,
+      xp: sortedPredictions.length * 10,
+      current_streak: currentStreak,
+      best_streak: bestStreak,
+      character_tier: getCharacterTier(points),
+      updated_at: new Date().toISOString(),
+    };
+  });
+
+  if (progressRows.length === 0) return;
+
+  const { error: upsertError } = await supabaseAdmin
+    .from('user_progress')
+    .upsert(progressRows, { onConflict: 'user_id' });
+  if (upsertError) throw upsertError;
+}
+
+function scorePrediction(prediction: PredictionSettlementRow, homeScore: number, awayScore: number) {
+  const actualResult = getResult(homeScore, awayScore);
+  if (prediction.pred_home_score === homeScore && prediction.pred_away_score === awayScore) return 5;
+  if (prediction.predicted_result === actualResult) return 3;
+  return 0;
+}
+
+function getResult(homeScore: number, awayScore: number) {
+  if (homeScore > awayScore) return 'home';
+  if (awayScore > homeScore) return 'away';
+  return 'draw';
 }
 
 async function footballDataFetch<T>(path: string, season?: string) {

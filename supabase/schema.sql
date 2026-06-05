@@ -64,10 +64,15 @@ create table if not exists predictions (
   pred_home_score int not null check (pred_home_score >= 0),
   pred_away_score int not null check (pred_away_score >= 0),
   is_locked boolean default false,
+  points_awarded int not null default 0,
+  settled_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   unique (user_id, match_external_id)
 );
+
+create index if not exists predictions_settlement_idx
+  on predictions (settled_at, match_external_id);
 
 create table if not exists user_progress (
   user_id uuid primary key references auth.users(id) on delete cascade,

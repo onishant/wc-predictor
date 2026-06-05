@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { AppNav } from '@/components/app-nav';
 import { MixamoCharacterStage } from '@/components/characters/mixamo-character-stage';
-import type { CharacterMood } from '@/components/characters/mixamo-character-stage';
+import { UserCharacterStage } from '@/components/characters/user-character-stage';
+import type { CharacterMood } from '@/lib/character-progress';
 import { supabase } from '@/lib/supabase';
 
 type LeaderboardRow = {
@@ -82,7 +83,7 @@ export default async function LeaderboardPage() {
               </Link>
             </div>
           </div>
-          <MixamoCharacterStage mood="victory" height="sm" label="Leaderboard avatar" />
+          <UserCharacterStage fallbackMood="victory" height="sm" label="Leaderboard avatar" />
         </header>
 
         {!supabase && (
