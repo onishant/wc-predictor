@@ -208,7 +208,7 @@ function toAvatarId(value?: string | null): AvatarId {
 }
 
 function toFeatureId(value?: string | null): AvatarFeatureId {
-  if (value === 'clubAura' || value === 'captainBand' || value === 'championGlow') return value;
+  if (value === 'football' || value === 'clubAura' || value === 'captainBand' || value === 'championGlow') return value;
   return 'none';
 }
 
@@ -218,11 +218,14 @@ function avatarLabel(row: LeaderboardRow) {
   const avatarName = avatar === 'keeper' ? 'Keeper' : avatar === 'captain' ? 'Captain' : 'Striker';
   if (feature === 'none') return avatarName;
 
-  const featureName = feature === 'clubAura'
-    ? 'Club aura'
-    : feature === 'captainBand'
-      ? 'Captain band'
-      : 'Champion glow';
+  const featureName =
+    feature === 'football'
+      ? 'Football control'
+      : feature === 'clubAura'
+        ? 'Club aura'
+        : feature === 'captainBand'
+          ? 'Captain band'
+          : 'Champion glow';
 
   return `${avatarName} · ${featureName}`;
 }

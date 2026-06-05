@@ -1,7 +1,7 @@
 import type { CharacterMood } from '@/lib/character-progress';
 
 export type AvatarId = 'striker' | 'keeper' | 'captain';
-export type AvatarFeatureId = 'none' | 'clubAura' | 'captainBand' | 'championGlow';
+export type AvatarFeatureId = 'none' | 'football' | 'clubAura' | 'captainBand' | 'championGlow';
 export type AvatarUnlockId = CharacterMood | Exclude<AvatarFeatureId, 'none'>;
 
 export type AvatarProfile = {
@@ -72,6 +72,7 @@ export const FEATURE_UNLOCKS: Array<{
   cost: number;
   description: string;
 }> = [
+  { id: 'football', name: 'Football control', cost: 20, description: 'Adds a ball that reacts to equipped gestures.' },
   { id: 'clubAura', name: 'Club aura', cost: 30, description: 'Adds a subtle energy ring.' },
   { id: 'captainBand', name: 'Captain band', cost: 55, description: 'Adds a captain identity marker.' },
   { id: 'championGlow', name: 'Champion glow', cost: 90, description: 'Adds a stronger winner effect.' },

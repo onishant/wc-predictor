@@ -1,6 +1,6 @@
 'use client';
 
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, useAnimations, useGLTF } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import type { Group } from 'three';
@@ -114,12 +114,13 @@ function CharacterModel({
     <group ref={group} position={[0, -1, 0]} rotation={[Math.PI, Math.PI - 0.25, Math.PI]} scale={1.7}>
       <primitive object={scene} />
       <AvatarFeature featureId={featureId} accent={accent} />
+      {featureId === 'football' && <FootballProp mood={mood} accent={accent} />}
     </group>
   );
 }
 
 function AvatarFeature({ featureId, accent }: { featureId: AvatarFeatureId; accent: string }) {
-  if (featureId === 'none') return null;
+  if (featureId === 'none' || featureId === 'football') return null;
 
   return (
     <group>
@@ -135,6 +136,75 @@ function AvatarFeature({ featureId, accent }: { featureId: AvatarFeatureId; acce
           <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.6} />
         </mesh>
       )}
+    </group>
+  );
+}
+
+function FootballProp({ mood, accent }: { mood: CharacterMood; accent: string }) {
+  const ball = useRef<Group>(null);
+
+  useFrame(({ clock }) => {
+    if (!ball.current) return;
+
+    const t = clock.getElapsedTime();
+    const phase = t % 2;
+
+    if (mood === 'goalkeeperCatchHigh') {
+      ball.current.position.set(0.2, 1.1 + Math.sin(t * 4) * 0.03, -0.1);
+      ball.current.rotation.set(t * 1.2, t * 0.4, 0);
+      return;
+    }
+
+    if (mood === 'goalkeeperCatchMedium') {
+      ball.current.position.set(0.26, 0.58 + Math.sin(t * 4) * 0.02, -0.16);
+      ball.current.rotation.set(t * 1.1, 0, t * 0.35);
+      return;
+    }
+
+    if (mood === 'jogging') {
+      const kick = Math.sin(t * 3);
+      ball.current.position.set(0.55 + kick * 0.18, -0.78 + Math.max(0, kick) * 0.12, -0.08);
+      ball.current.rotation.set(t * 3.5, t * 1.2, 0);
+      return;
+    }
+
+    if (mood === 'victory') {
+      const bounce = Math.abs(Math.sin(t * 3.4));
+      ball.current.position.set(-0.58 + Math.sin(t * 1.4) * 0.12, -0.7 + bounce * 0.32, -0.08);
+      ball.current.rotation.set(t * 2.6, t * 0.7, t * 0.4);
+      return;
+    }
+
+    if (mood === 'excited') {
+      ball.current.position.set(-0.52 + Math.sin(t * 2.2) * 0.1, -0.73 + Math.abs(Math.sin(t * 2.2)) * 0.16, -0.08);
+      ball.current.rotation.set(t * 2, t * 0.8, 0);
+      return;
+    }
+
+    if (mood === 'defeat') {
+      ball.current.position.set(-0.7 + phase * 0.18, -0.82, -0.08);
+      ball.current.rotation.set(t * 1.4, 0, t * 0.5);
+      return;
+    }
+
+    ball.current.position.set(0.55, -0.78 + Math.sin(t * 1.6) * 0.03, -0.08);
+    ball.current.rotation.set(t * 0.9, t * 0.4, 0);
+  });
+
+  return (
+    <group ref={ball} scale={0.28}>
+      <mesh>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.42} />
+      </mesh>
+      <mesh rotation={[0.72, 0.4, 0]}>
+        <icosahedronGeometry args={[1.012, 1]} />
+        <meshStandardMaterial color="#020617" wireframe roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 0, 0.98]}>
+        <circleGeometry args={[0.22, 6]} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.45} />
+      </mesh>
     </group>
   );
 }
