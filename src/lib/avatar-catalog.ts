@@ -34,6 +34,8 @@ export const DEFAULT_AVATAR_PROFILE: AvatarProfile = {
 
 const CURRENT_MIXAMO_MODEL = '/assets/characters/mixamo/Pumpkinhulk_L_Shaw_TPose.glb';
 const CH19_MIXAMO_MODEL = '/assets/characters/mixamo/Character_Ch19_TPose.glb';
+const CH33_MIXAMO_MODEL = '/assets/characters/mixamo/Character_Ch33_TPose.glb';
+const CH38_MIXAMO_MODEL = '/assets/characters/mixamo/Character_Ch38_TPose.glb';
 
 export const AVATAR_ARCHETYPES: Array<{
   id: AvatarId;
@@ -83,7 +85,7 @@ export const AVATAR_ARCHETYPES: Array<{
     description: 'Controlled, creative, built for smart calls.',
     accent: '#a3e635',
     defaultGesture: 'excited',
-    modelPath: CURRENT_MIXAMO_MODEL,
+    modelPath: CH33_MIXAMO_MODEL,
   },
   {
     id: 'winger',
@@ -91,7 +93,7 @@ export const AVATAR_ARCHETYPES: Array<{
     description: 'Quick movement and high-risk prediction energy.',
     accent: '#fb7185',
     defaultGesture: 'jogging',
-    modelPath: CURRENT_MIXAMO_MODEL,
+    modelPath: CH38_MIXAMO_MODEL,
   },
   {
     id: 'defender',
