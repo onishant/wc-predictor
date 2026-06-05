@@ -3,7 +3,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, useAnimations, useGLTF } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
-import type { Group } from 'three';
+import type { Group, Object3D } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { AVATAR_ARCHETYPES, avatarHasBuiltInFootball, getAvatarAccent, getAvatarModel } from '@/lib/avatar-catalog';
 import type { AvatarFeatureId, AvatarId } from '@/lib/avatar-catalog';
@@ -78,7 +78,7 @@ function CharacterModel({
   const goalkeeperCatchMedium = useGLTF(manifest.animations.goalkeeperCatchMedium);
   const goalkeeperCatchHigh = useGLTF(manifest.animations.goalkeeperCatchHigh);
 
-  const scene = useMemo(() => clone(character.scene), [character.scene]);
+  const scene = useMemo(() => normalizeMixamoRigNames(clone(character.scene)), [character.scene]);
   const clips = useMemo(
     () =>
       [
@@ -120,6 +120,14 @@ function CharacterModel({
       {(featureId === 'football' || avatarHasBuiltInFootball(avatarId)) && <FootballProp mood={mood} accent={accent} />}
     </group>
   );
+}
+
+function normalizeMixamoRigNames(scene: Object3D) {
+  scene.traverse((object) => {
+    object.name = object.name.replace(/^mixamorig\d+:/, 'mixamorig:');
+  });
+
+  return scene;
 }
 
 function AvatarIdentityKit({ avatarId, accent }: { avatarId: AvatarId; accent: string }) {

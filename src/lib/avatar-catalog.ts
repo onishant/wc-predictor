@@ -33,6 +33,7 @@ export const DEFAULT_AVATAR_PROFILE: AvatarProfile = {
 };
 
 const CURRENT_MIXAMO_MODEL = '/assets/characters/mixamo/Pumpkinhulk_L_Shaw_TPose.glb';
+const CH19_MIXAMO_MODEL = '/assets/characters/mixamo/Character_Ch19_TPose.glb';
 
 export const AVATAR_ARCHETYPES: Array<{
   id: AvatarId;
@@ -73,7 +74,7 @@ export const AVATAR_ARCHETYPES: Array<{
     description: 'Starter avatar with the ball visible from day one.',
     accent: '#16a34a',
     defaultGesture: 'jogging',
-    modelPath: CURRENT_MIXAMO_MODEL,
+    modelPath: CH19_MIXAMO_MODEL,
     builtInFootball: true,
   },
   {
