@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, useAnimations, useGLTF } from '@react-three/drei';
-import { Component, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Group } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -12,14 +12,13 @@ import type { CharacterMood } from '@/lib/character-progress';
 
 type MotionId = 'idle' | 'run' | 'celebrate' | 'keeper';
 
-const readyPlayerMeAvatar =
-  'https://models.readyplayer.me/6185a4acfb622cf1cdc49348.glb?lod=2&textureAtlas=512&textureSizeLimit=512';
+const readyPlayerMeAvatar = '/assets/characters/readyplayerme/RPM_Masculine_TPose.glb';
 
 const readyPlayerMeAnimations = {
-  idle: 'https://raw.githubusercontent.com/readyplayerme/animation-library/master/masculine/glb/idle/M_Standing_Idle_001.glb',
-  run: 'https://raw.githubusercontent.com/readyplayerme/animation-library/master/masculine/glb/locomotion/M_Run_001.glb',
-  celebrate: 'https://raw.githubusercontent.com/readyplayerme/animation-library/master/masculine/glb/expression/M_Standing_Expressions_012.glb',
-  keeper: 'https://raw.githubusercontent.com/readyplayerme/animation-library/master/masculine/glb/locomotion/M_Jog_001.glb',
+  idle: '/assets/characters/readyplayerme/RPM_M_Standing_Idle_001.glb',
+  run: '/assets/characters/readyplayerme/RPM_M_Run_001.glb',
+  celebrate: '/assets/characters/readyplayerme/RPM_M_Standing_Expressions_012.glb',
+  keeper: '/assets/characters/readyplayerme/RPM_M_Jog_001.glb',
 } satisfies Record<MotionId, string>;
 
 const quaterniusModel = '/assets/characters/quaternius/Quaternius_UAL2_Standard.glb';
@@ -41,9 +40,9 @@ const candidateSummaries = [
   {
     name: 'Ready Player Me',
     verdict: 'Best visual ceiling',
-    license: 'Free with developer setup; website avatars are non-commercial unless handled through their developer terms.',
-    speed: 'Remote GLB with LOD and texture atlas options. Good for quick first paint if cached.',
-    risk: 'Needs football kit styling and RPM-compatible animation wiring.',
+    license: 'Animation library sample is local for this lab. Real player avatars still need the Ready Player Me developer setup.',
+    speed: 'Local 2.6 MB body plus tiny motion clips. Real RPM avatars also support LOD and texture atlas options.',
+    risk: 'The visible lab model proves the RPM skeleton/motion path, not the final footballer styling.',
   },
   {
     name: 'Quaternius CC0',
@@ -94,8 +93,8 @@ export function AvatarComparisonLab() {
           title="A. Premium Web Avatar"
           badge="Ready Player Me"
           verdict="Best visual ceiling"
-          notes={['Public sample GLB', 'RPM mocap library', 'LOD/texture controls']}
-          source="models.readyplayer.me + readyplayerme/animation-library"
+          notes={['Local RPM rig sample', 'RPM mocap library', '2.6 MB body']}
+          source="readyplayerme/animation-library"
         >
           <RpmStage motion={motion} />
         </CandidateCard>
@@ -192,38 +191,17 @@ function CandidateCard({
 }
 
 function RpmStage({ motion }: { motion: MotionId }) {
-  const [enabled, setEnabled] = useState(false);
-
   return (
-    <StageShell label="RPM web GLB">
-      {enabled ? (
-        <StageErrorBoundary>
-          <Canvas camera={{ position: [0, 1.2, 4.6], fov: 34 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}>
-            <Suspense fallback={null}>
-              <StadiumLights />
-              <RpmModel motion={motion} />
-              <PitchMarks />
-              <ContactShadows position={[0, -1.2, 0]} opacity={0.34} scale={4.6} blur={2.2} far={2} />
-              <Environment preset="city" />
-            </Suspense>
-          </Canvas>
-        </StageErrorBoundary>
-      ) : (
-        <div className="flex h-full items-center justify-center p-6 text-center">
-          <div className="max-w-sm">
-            <p className="text-sm font-semibold text-cyan-300">Ready Player Me web preview</p>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Loads a public optimized avatar from Ready Player Me&apos;s CDN with RPM mocap clips. Kept opt-in so a blocked CDN does not break the lab.
-            </p>
-            <button
-              onClick={() => setEnabled(true)}
-              className="mt-4 rounded-lg border border-cyan-300 bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
-            >
-              Load web preview
-            </button>
-          </div>
-        </div>
-      )}
+    <StageShell label="RPM local GLB">
+      <Canvas camera={{ position: [0, 1.2, 4.6], fov: 34 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}>
+        <Suspense fallback={null}>
+          <StadiumLights />
+          <RpmModel motion={motion} />
+          <PitchMarks />
+          <ContactShadows position={[0, -1.2, 0]} opacity={0.34} scale={4.6} blur={2.2} far={2} />
+          <Environment preset="city" />
+        </Suspense>
+      </Canvas>
     </StageShell>
   );
 }
@@ -321,29 +299,6 @@ function StageShell({ label, children }: { label: string; children: ReactNode })
   );
 }
 
-class StageErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  render() {
-    if (!this.state.failed) return this.props.children;
-
-    return (
-      <div className="flex h-full items-center justify-center p-6 text-center">
-        <div className="max-w-sm">
-          <p className="text-sm font-semibold text-cyan-300">Remote preview unavailable here</p>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            This candidate uses Ready Player Me&apos;s CDN. The app can still ship it, but this local runtime cannot resolve the CDN host.
-          </p>
-        </div>
-      </div>
-    );
-  }
-}
-
 function StadiumLights() {
   return (
     <>
@@ -420,5 +375,7 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
 }
 
 if (typeof window !== 'undefined') {
+  useGLTF.preload(readyPlayerMeAvatar);
+  Object.values(readyPlayerMeAnimations).forEach((url) => useGLTF.preload(url));
   useGLTF.preload(quaterniusModel);
 }
