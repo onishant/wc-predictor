@@ -16,6 +16,7 @@ type MixamoCharacterStageProps = {
   featureId?: AvatarFeatureId;
   height?: 'sm' | 'md' | 'lg';
   label?: string;
+  framing?: 'default' | 'wide';
 };
 
 const heightClass = {
@@ -32,6 +33,7 @@ export function MixamoCharacterStage({
   featureId = 'none',
   height = 'md',
   label = manifest.character.name,
+  framing = 'default',
 }: MixamoCharacterStageProps) {
   const accent = getAvatarAccent(avatarId);
 
@@ -45,7 +47,7 @@ export function MixamoCharacterStage({
         <Suspense fallback={null}>
           <ambientLight intensity={1.35} />
           <directionalLight position={[3, 4, 3]} intensity={2.4} />
-          <CharacterModel mood={mood} avatarId={avatarId} accent={accent} featureId={featureId} />
+          <CharacterModel mood={mood} avatarId={avatarId} accent={accent} featureId={featureId} framing={framing} />
           <ContactShadows position={[0, -1.28, 0]} opacity={0.36} scale={5} blur={2.4} far={2.2} />
           <Environment preset="city" />
         </Suspense>
@@ -62,11 +64,13 @@ function CharacterModel({
   avatarId,
   accent,
   featureId,
+  framing,
 }: {
   mood: CharacterMood;
   avatarId: AvatarId;
   accent: string;
   featureId: AvatarFeatureId;
+  framing: NonNullable<MixamoCharacterStageProps['framing']>;
 }) {
   const group = useRef<Group>(null);
   const character = useGLTF(getAvatarModel(avatarId));
@@ -93,6 +97,7 @@ function CharacterModel({
         asset.animations.map((clip) => {
             const namedClip = clip.clone();
             namedClip.name = animationOrder[index];
+            anchorHipsToStage(namedClip);
             return namedClip;
           }),
         ),
@@ -113,7 +118,7 @@ function CharacterModel({
   }, [actions, mood]);
 
   return (
-    <group ref={group} position={[0, -1, 0]} rotation={[Math.PI, Math.PI - 0.25, Math.PI]} scale={1.7}>
+    <group ref={group} position={[framing === 'wide' ? -0.15 : 0, -1, 0]} rotation={[Math.PI, Math.PI - 0.25, Math.PI]} scale={framing === 'wide' ? 1.22 : 1.7}>
       <primitive object={scene} />
       <AvatarIdentityKit avatarId={avatarId} accent={accent} />
       <AvatarFeature featureId={featureId} accent={accent} />
@@ -131,6 +136,20 @@ function normalizeMixamoRigNames(scene: Object3D) {
   });
 
   return scene;
+}
+
+function anchorHipsToStage(clip: { tracks: Array<{ name: string; values: { length: number; [index: number]: number } }> }) {
+  clip.tracks.forEach((track) => {
+    if (!track.name.endsWith('Hips.position')) return;
+    const values = track.values;
+    const originX = values[0] ?? 0;
+    const originZ = values[2] ?? 0;
+
+    for (let index = 0; index < values.length; index += 3) {
+      values[index] = originX;
+      values[index + 2] = originZ;
+    }
+  });
 }
 
 function AvatarIdentityKit({ avatarId, accent }: { avatarId: AvatarId; accent: string }) {
