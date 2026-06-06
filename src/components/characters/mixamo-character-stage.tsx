@@ -124,7 +124,10 @@ function CharacterModel({
 
 function normalizeMixamoRigNames(scene: Object3D) {
   scene.traverse((object) => {
-    object.name = object.name.replace(/^mixamorig\d+:/, 'mixamorig:');
+    // GLTFLoader strips ':' from node names, so normalize both raw and sanitized Mixamo prefixes.
+    object.name = object.name
+      .replace(/^mixamorig\d+:/, 'mixamorig:')
+      .replace(/^mixamorig\d+(?=[A-Z])/, 'mixamorig');
   });
 
   return scene;
