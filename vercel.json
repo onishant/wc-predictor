@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/sync-world-cup",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/ml-refresh",
+      "schedule": "0 */2 * * *"
     }
   ]
 }

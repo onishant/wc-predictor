@@ -140,6 +140,8 @@ function toMatchSummary(match: MatchDataRow, teamById: Map<string, TeamRow>): Wo
     stage: match.stage ?? undefined,
     homeTeam: home?.name ?? 'TBD',
     awayTeam: away?.name ?? 'TBD',
+    homeTeamId: match.home_team_id ? Number(match.home_team_id) : null,
+    awayTeamId: match.away_team_id ? Number(match.away_team_id) : null,
     homeTeamVisual: toTeamVisual(home),
     awayTeamVisual: toTeamVisual(away),
     homeScore: match.home_score,

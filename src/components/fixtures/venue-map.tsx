@@ -3,19 +3,17 @@
 import { useMemo, useState } from 'react';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import Map from 'react-map-gl/maplibre';
+import MapGL from 'react-map-gl/maplibre';
 import type { StyleSpecification } from 'maplibre-gl';
-import { PredictionForm } from '@/components/fixtures/prediction-form';
-import { TeamBadge } from '@/components/fixtures/team-badge';
-import { buildVenueRouting } from '@/lib/fixture-venue-routing';
-import type { WorldCupMatchSummary } from '@/lib/football-data';
 import type { WorldCupVenue } from '@/lib/world-cup-venues';
 
 type Props = {
   venues: WorldCupVenue[];
-  matches: WorldCupMatchSummary[];
-  userId: string;
+  selectedVenueId?: string;
+  onVenueSelect?: (venueId: string) => void;
 };
+
+type VenuePoint = WorldCupVenue & { matchCount: number };
 
 type Viewport = {
   latitude: number;
@@ -26,7 +24,7 @@ type Viewport = {
   transitionDuration?: number;
 };
 
-type MapMode = 'map' | 'satellite';
+export type MapMode = 'map' | 'satellite';
 
 const CARTO_DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const ESRI_SATELLITE_STYLE = {
@@ -88,8 +86,8 @@ function venueFocusZoom(mapMode: MapMode, venue: WorldCupVenue) {
   return venueOverviewZoom(venue);
 }
 
-export function VenueMap({ venues, matches, userId }: Props) {
-  const [selectedVenueId, setSelectedVenueId] = useState(venues[0]?.id ?? '');
+export function VenueMap({ venues, selectedVenueId, onVenueSelect }: Props) {
+  const [internalSelectedId, setInternalSelectedId] = useState(venues[0]?.id ?? '');
   const [mapMode, setMapMode] = useState<MapMode>('map');
   const [viewState, setViewState] = useState<Viewport>({
     latitude: 39.5,
@@ -99,34 +97,43 @@ export function VenueMap({ venues, matches, userId }: Props) {
     bearing: 0,
   });
 
-  const { matchesByVenue } = useMemo(() => buildVenueRouting(matches, venues), [matches, venues]);
+  const activeVenueId = selectedVenueId ?? internalSelectedId;
 
-  const selectedVenue = useMemo(
-    () => venues.find((venue) => venue.id === selectedVenueId) ?? venues[0],
-    [selectedVenueId, venues]
-  );
-
-  const selectedVenueMatches = useMemo(() => {
-    if (!selectedVenue) {
-      return [];
-    }
-
-    return (matchesByVenue.get(selectedVenue.id) ?? []).slice().sort((a, b) => a.utcDate.localeCompare(b.utcDate));
-  }, [matchesByVenue, selectedVenue]);
+  const matchCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    return counts;
+  }, []);
 
   const venuePoints = useMemo(
     () =>
       venues.map((venue) => ({
         ...venue,
-        matchCount: matchesByVenue.get(venue.id)?.length ?? 0,
+        matchCount: matchCounts.get(venue.id) ?? 0,
       })),
-    [matchesByVenue, venues]
+    [venues, matchCounts],
   );
 
   const selectedVenuePoint = useMemo(
-    () => venuePoints.find((venue) => venue.id === selectedVenueId),
-    [selectedVenueId, venuePoints]
+    () => venuePoints.find((v) => v.id === activeVenueId),
+    [activeVenueId, venuePoints],
   );
+
+  function handleVenueClick(venueId: string) {
+    setInternalSelectedId(venueId);
+    onVenueSelect?.(venueId);
+
+    const venue = venues.find((v) => v.id === venueId);
+    if (!venue) return;
+
+    setViewState((current) => ({
+      ...current,
+      latitude: venue.latitude,
+      longitude: venue.longitude,
+      zoom: venueFocusZoom(mapMode, venue),
+      pitch: mapMode === 'satellite' ? 0 : current.pitch,
+      transitionDuration: 500,
+    }));
+  }
 
   const selectedHaloLayer = new ScatterplotLayer({
     id: 'selected-venue-halo',
@@ -136,8 +143,8 @@ export function VenueMap({ venues, matches, userId }: Props) {
     filled: true,
     radiusUnits: 'pixels',
     lineWidthUnits: 'pixels',
-    getPosition: (d) => [d.longitude, d.latitude],
-    getRadius: (d) => 31 + Math.min(d.matchCount, 6),
+    getPosition: (d: VenuePoint) => [d.longitude, d.latitude],
+    getRadius: () => 31,
     getFillColor: [34, 211, 238, 36],
     getLineColor: [255, 255, 255, 220],
     getLineWidth: 2,
@@ -151,11 +158,11 @@ export function VenueMap({ venues, matches, userId }: Props) {
     filled: true,
     radiusUnits: 'pixels',
     lineWidthUnits: 'pixels',
-    getPosition: (d) => [d.longitude, d.latitude],
-    getRadius: (d) => 20 + Math.min(d.matchCount * 1.4, 9),
+    getPosition: (d: VenuePoint) => [d.longitude, d.latitude],
+    getRadius: () => 20,
     getFillColor: [15, 23, 42, 170],
-    getLineColor: (d) => (d.id === selectedVenueId ? [255, 255, 255, 235] : venueRingColor(d.country)),
-    getLineWidth: (d) => (d.id === selectedVenueId ? 3 : 2),
+    getLineColor: (d: VenuePoint) => (d.id === activeVenueId ? [255, 255, 255, 235] : venueRingColor(d.country)),
+    getLineWidth: (d: VenuePoint) => (d.id === activeVenueId ? 3 : 2),
   });
 
   const markerLayer = new ScatterplotLayer({
@@ -166,22 +173,14 @@ export function VenueMap({ venues, matches, userId }: Props) {
     filled: true,
     radiusUnits: 'pixels',
     lineWidthUnits: 'pixels',
-    getPosition: (d) => [d.longitude, d.latitude],
-    getRadius: (d) => (d.id === selectedVenueId ? 13 : 10),
-    getFillColor: (d) => venueColor(d.country),
+    getPosition: (d: VenuePoint) => [d.longitude, d.latitude],
+    getRadius: (d: VenuePoint) => (d.id === activeVenueId ? 13 : 10),
+    getFillColor: (d: VenuePoint) => venueColor(d.country),
     getLineColor: [255, 255, 255, 235],
-    getLineWidth: (d) => (d.id === selectedVenueId ? 2.5 : 1),
-    onClick: ({ object }) => {
-      if (!object) return;
-      setSelectedVenueId(object.id);
-      setViewState((current) => ({
-        ...current,
-        latitude: object.latitude,
-        longitude: object.longitude,
-        zoom: venueFocusZoom(mapMode, object),
-        pitch: mapMode === 'satellite' ? 0 : current.pitch,
-        transitionDuration: 500,
-      }));
+    getLineWidth: (d: VenuePoint) => (d.id === activeVenueId ? 2.5 : 1),
+    onClick: (info: { object?: VenuePoint | null }) => {
+      if (!info.object) return;
+      handleVenueClick(info.object.id);
     },
   });
 
@@ -189,9 +188,9 @@ export function VenueMap({ venues, matches, userId }: Props) {
     id: 'venue-match-counts',
     data: venuePoints,
     pickable: false,
-    getPosition: (d) => [d.longitude, d.latitude],
-    getText: (d) => String(d.matchCount),
-    getSize: (d) => (d.id === selectedVenueId ? 13 : 11),
+    getPosition: (d: VenuePoint) => [d.longitude, d.latitude],
+    getText: (d: VenuePoint) => String(d.matchCount),
+    getSize: (d: VenuePoint) => (d.id === activeVenueId ? 13 : 11),
     sizeUnits: 'pixels',
     getColor: [2, 6, 23, 255],
     getTextAnchor: 'middle',
@@ -202,11 +201,11 @@ export function VenueMap({ venues, matches, userId }: Props) {
     id: 'venue-labels',
     data: venuePoints,
     pickable: false,
-    getPosition: (d) => [d.longitude, d.latitude],
-    getText: (d) => d.city,
-    getSize: (d) => (d.id === selectedVenueId ? 12 : 10),
+    getPosition: (d: VenuePoint) => [d.longitude, d.latitude],
+    getText: (d: VenuePoint) => d.city,
+    getSize: (d: VenuePoint) => (d.id === activeVenueId ? 12 : 10),
     sizeUnits: 'pixels',
-    getColor: (d) => (d.id === selectedVenueId ? [255, 255, 255, 255] : [203, 213, 225, 220]),
+    getColor: (d: VenuePoint) => (d.id === activeVenueId ? [255, 255, 255, 255] : [203, 213, 225, 220]),
     getTextAnchor: 'middle',
     getAlignmentBaseline: 'top',
     getPixelOffset: [0, 24],
@@ -215,206 +214,74 @@ export function VenueMap({ venues, matches, userId }: Props) {
   const layers = [selectedHaloLayer, ringLayer, markerLayer, countLayer, labelLayer];
 
   return (
-    <section className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-      <div className="rounded-[28px] border border-slate-800 bg-slate-950 p-4 shadow-[0_22px_60px_rgba(15,23,42,0.32)]">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Venue map</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-50">North America host cities</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              Click a marker to jump to that venue and load the fixtures the app has routed there. Predictions stay attached to each match card.
-            </p>
-          </div>
-          <div className="text-sm text-slate-400">
-            {venues.length} venues · {selectedVenueMatches.length} fixtures at the selected venue
-          </div>
+    <div className="overflow-hidden rounded-[24px] border border-slate-800 bg-slate-900">
+      <div className="relative h-[50vh] min-h-[400px]">
+        <DeckGL
+          viewState={viewState}
+          controller={{ doubleClickZoom: true, touchRotate: false }}
+          onViewStateChange={({ viewState: next }) => setViewState(next as Viewport)}
+          layers={layers}
+          getTooltip={(info: { object?: VenuePoint | null }) =>
+            info.object
+              ? {
+                  text: `${info.object.venueName}\n${info.object.commonName}\n${info.object.city}, ${info.object.country}`,
+                }
+              : null
+          }
+        >
+          <MapGL
+            reuseMaps
+            mapStyle={mapMode === 'satellite' ? ESRI_SATELLITE_STYLE : CARTO_DARK_STYLE}
+            attributionControl={false}
+            dragRotate={false}
+            cooperativeGestures
+            style={{ width: '100%', height: '100%' }}
+          />
+        </DeckGL>
+
+        {/* Map mode toggle */}
+        <div className="absolute right-4 top-4 flex rounded-full border border-slate-700 bg-slate-950/85 p-1 text-xs text-slate-300 shadow-lg backdrop-blur">
+          {(['map', 'satellite'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={mapMode === mode}
+              onClick={() => {
+                setMapMode(mode);
+                const venue = venues.find((v) => v.id === activeVenueId);
+                if (!venue) return;
+                setViewState((current) => ({
+                  ...current,
+                  latitude: venue.latitude,
+                  longitude: venue.longitude,
+                  zoom: venueFocusZoom(mode, venue),
+                  pitch: mode === 'satellite' ? 0 : 28,
+                  bearing: 0,
+                  transitionDuration: 500,
+                }));
+              }}
+              className={`rounded-full px-3 py-1.5 font-medium capitalize transition ${
+                mapMode === mode ? 'bg-cyan-400 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
         </div>
 
-        <div className="overflow-hidden rounded-[24px] border border-slate-800 bg-slate-900">
-          <div className="relative h-[66vh] min-h-[520px]">
-            <DeckGL
-              viewState={viewState}
-              controller={{ doubleClickZoom: true, touchRotate: false }}
-              onViewStateChange={({ viewState: nextViewState }) => setViewState(nextViewState as Viewport)}
-              layers={layers}
-              getTooltip={({ object }) =>
-                object
-                  ? {
-                      text: `${object.venueName}\n${object.commonName}\n${object.city}, ${object.country}\n${object.matchCount} group-stage fixtures`,
-                    }
-                  : null
-              }
-            >
-              <Map
-                reuseMaps
-                mapStyle={mapMode === 'satellite' ? ESRI_SATELLITE_STYLE : CARTO_DARK_STYLE}
-                attributionControl={false}
-                dragRotate={false}
-                cooperativeGestures
-                style={{ width: '100%', height: '100%' }}
-              />
-            </DeckGL>
-
-            <div className="pointer-events-none absolute inset-x-4 top-4 flex flex-wrap gap-2">
-              <span className="rounded-full border border-slate-700 bg-slate-950/80 px-3 py-1 text-xs text-slate-300 backdrop-blur">
-                North America
-              </span>
-              <span className="rounded-full border border-slate-700 bg-slate-950/80 px-3 py-1 text-xs text-slate-300 backdrop-blur">
-                {mapMode === 'satellite' ? 'Satellite imagery' : 'CARTO basemap'}
-              </span>
-              <span className="rounded-full border border-slate-700 bg-slate-950/80 px-3 py-1 text-xs text-slate-300 backdrop-blur">
-                Match-count markers
-              </span>
-            </div>
-
-            <div className="absolute right-4 top-4 flex rounded-full border border-slate-700 bg-slate-950/85 p-1 text-xs text-slate-300 shadow-lg backdrop-blur">
-              {(['map', 'satellite'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  aria-pressed={mapMode === mode}
-                  onClick={() => {
-                    setMapMode(mode);
-                    if (!selectedVenue) {
-                      return;
-                    }
-
-                    setViewState((current) => ({
-                      ...current,
-                      latitude: selectedVenue.latitude,
-                      longitude: selectedVenue.longitude,
-                      zoom: venueFocusZoom(mode, selectedVenue),
-                      pitch: mode === 'satellite' ? 0 : 28,
-                      bearing: 0,
-                      transitionDuration: 500,
-                    }));
-                  }}
-                  className={`rounded-full px-3 py-1.5 font-medium capitalize transition ${
-                    mapMode === mode ? 'bg-cyan-400 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Legend chips */}
+        <div className="pointer-events-none absolute inset-x-4 bottom-4 flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-slate-700/60 bg-slate-950/70 px-3 py-1 text-[11px] text-slate-400 backdrop-blur">
+            🇺🇸 United States
+          </span>
+          <span className="rounded-full border border-slate-700/60 bg-slate-950/70 px-3 py-1 text-[11px] text-slate-400 backdrop-blur">
+            🇲🇽 Mexico
+          </span>
+          <span className="rounded-full border border-slate-700/60 bg-slate-950/70 px-3 py-1 text-[11px] text-slate-400 backdrop-blur">
+            🇨🇦 Canada
+          </span>
         </div>
       </div>
-
-      <aside className="rounded-[28px] border border-slate-800 bg-slate-900 p-4 shadow-[0_22px_60px_rgba(15,23,42,0.2)]">
-        {selectedVenue && (
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Selected venue</p>
-              <h3 className="mt-1 text-2xl font-semibold text-slate-50">{selectedVenue.venueName}</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                {selectedVenue.commonName} · {selectedVenue.city}, {selectedVenue.country}
-              </p>
-              {selectedVenue.municipality && (
-                <p className="mt-1 text-xs text-slate-400">Stadium location: {selectedVenue.municipality}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <Stat label="Latitude" value={selectedVenue.latitude.toFixed(4)} />
-              <Stat label="Longitude" value={selectedVenue.longitude.toFixed(4)} />
-              <Stat label="Upcoming fixtures" value={String(selectedVenueMatches.length)} />
-              <Stat label="Country" value={selectedVenue.country} />
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Venue note</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{selectedVenue.note}</p>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Upcoming fixtures</p>
-                <p className="mt-1 text-sm text-slate-400">Sorted by kickoff and ready for predictions.</p>
-              </div>
-
-              {selectedVenueMatches.length === 0 ? (
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-400">
-                  No upcoming fixtures are routed to this venue yet.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedVenueMatches.map((match, index) => (
-                    <div key={match.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                        {index + 1}. {new Date(match.utcDate).toLocaleString()}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <TeamBadge team={match.homeTeamVisual} />
-                        <span className="text-xs uppercase tracking-[0.16em] text-slate-500">vs</span>
-                        <TeamBadge team={match.awayTeamVisual} />
-                      </div>
-                      <p className="text-sm text-slate-400">
-                        {match.stage ?? 'Stage TBD'} {match.group ? `· ${match.group}` : ''} · {match.status}
-                      </p>
-                      <PredictionForm
-                        matchExternalId={String(match.id)}
-                        homeTeam={match.homeTeam}
-                        awayTeam={match.awayTeam}
-                        homeTeamVisual={match.homeTeamVisual}
-                        awayTeamVisual={match.awayTeamVisual}
-                        kickoffUtc={match.utcDate}
-                        userId={userId}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-6 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">All venues</p>
-          <div className="grid gap-2">
-            {venues.map((venue) => {
-              const count = matchesByVenue.get(venue.id)?.length ?? 0;
-              const active = venue.id === selectedVenue?.id;
-
-              return (
-                <button
-                  key={venue.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedVenueId(venue.id);
-                    setViewState((current) => ({
-                      ...current,
-                      latitude: venue.latitude,
-                      longitude: venue.longitude,
-                      zoom: venueFocusZoom(mapMode, venue),
-                      pitch: mapMode === 'satellite' ? 0 : current.pitch,
-                      transitionDuration: 450,
-                    }));
-                  }}
-                  className={`flex items-center justify-between rounded-2xl border px-3 py-3 text-left transition ${
-                    active ? 'border-cyan-500/60 bg-cyan-500/10' : 'border-slate-800 bg-slate-950/60 hover:bg-slate-900'
-                  }`}
-                >
-                  <span>
-                    <span className="block text-sm font-medium text-slate-50">{venue.venueName}</span>
-                    <span className="block text-xs text-slate-400">{venue.commonName} · {venue.city}</span>
-                  </span>
-                  <span className="text-xs text-slate-400">{count} fixtures</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </aside>
-    </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-medium text-slate-50">{value}</p>
     </div>
   );
 }

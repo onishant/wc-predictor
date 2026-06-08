@@ -4,12 +4,10 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, useAnimations, useGLTF } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { Group } from 'three';
+import { Group, Object3D } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { MixamoCharacterStage } from '@/components/characters/mixamo-character-stage';
-import type { AvatarId } from '@/lib/avatar-catalog';
-import type { CharacterMood } from '@/lib/character-progress';
-
+import { buildKit, disposeKit, type CountryKit } from './kit/kit-builder';
+type CountryKitId = 'england' | 'brazil' | 'france' | 'argentina' | 'spain' | 'germany' | 'portugal' | 'usa' | 'japan' | 'nigeria';
 type MotionId = 'idle' | 'run' | 'celebrate' | 'keeper';
 
 const readyPlayerMeAvatar = '/assets/characters/readyplayerme/RPM_Masculine_TPose.glb';
@@ -21,19 +19,27 @@ const readyPlayerMeAnimations = {
   keeper: '/assets/characters/readyplayerme/RPM_M_Jog_001.glb',
 } satisfies Record<MotionId, string>;
 
-const quaterniusModel = '/assets/characters/quaternius/Quaternius_UAL2_Standard.glb';
+const countryKits = [
+  { id: 'england', name: 'England', primary: '#f8fafc', secondary: '#0f172a', accent: '#ef4444', shorts: '#0f172a', socks: '#f8fafc', boot: '#0f172a', sole: '#e2e8f0' },
+  { id: 'brazil', name: 'Brazil', primary: '#facc15', secondary: '#16a34a', accent: '#2563eb', shorts: '#2563eb', socks: '#f8fafc', boot: '#16a34a', sole: '#f8fafc' },
+  { id: 'france', name: 'France', primary: '#1d4ed8', secondary: '#f8fafc', accent: '#ef4444', shorts: '#f8fafc', socks: '#ef4444', boot: '#0f172a', sole: '#f8fafc' },
+  { id: 'argentina', name: 'Argentina', primary: '#e0f2fe', secondary: '#38bdf8', accent: '#facc15', shorts: '#0f172a', socks: '#f8fafc', boot: '#1e3a8a', sole: '#f8fafc' },
+  { id: 'spain', name: 'Spain', primary: '#b91c1c', secondary: '#facc15', accent: '#f97316', shorts: '#1e3a8a', socks: '#b91c1c', boot: '#0f172a', sole: '#facc15' },
+  { id: 'germany', name: 'Germany', primary: '#f8fafc', secondary: '#0f172a', accent: '#facc15', shorts: '#0f172a', socks: '#f8fafc', boot: '#0f172a', sole: '#facc15' },
+  { id: 'portugal', name: 'Portugal', primary: '#16a34a', secondary: '#dc2626', accent: '#facc15', shorts: '#166534', socks: '#dc2626', boot: '#0f172a', sole: '#dc2626' },
+  { id: 'usa', name: 'USA', primary: '#f8fafc', secondary: '#1d4ed8', accent: '#dc2626', shorts: '#1e3a8a', socks: '#f8fafc', boot: '#1d4ed8', sole: '#dc2626' },
+  { id: 'japan', name: 'Japan', primary: '#1e40af', secondary: '#60a5fa', accent: '#f8fafc', shorts: '#1e3a8a', socks: '#1e40af', boot: '#0f172a', sole: '#f8fafc' },
+  { id: 'nigeria', name: 'Nigeria', primary: '#16a34a', secondary: '#f8fafc', accent: '#84cc16', shorts: '#f8fafc', socks: '#16a34a', boot: '#16a34a', sole: '#f8fafc' },
+];
 
 const motionOptions: Array<{
   id: MotionId;
   label: string;
-  mixamoMood: CharacterMood;
-  mixamoAvatar: AvatarId;
-  quaterniusClip: string;
 }> = [
-  { id: 'idle', label: 'Idle', mixamoMood: 'idle', mixamoAvatar: 'playmaker', quaterniusClip: 'Idle_FoldArms_Loop' },
-  { id: 'run', label: 'Run', mixamoMood: 'jogging', mixamoAvatar: 'winger', quaterniusClip: 'Walk_Carry_Loop' },
-  { id: 'celebrate', label: 'Celebrate', mixamoMood: 'victory', mixamoAvatar: 'footballer', quaterniusClip: 'Yes' },
-  { id: 'keeper', label: 'Keeper', mixamoMood: 'goalkeeperCatchHigh', mixamoAvatar: 'keeper', quaterniusClip: 'Slide_Loop' },
+  { id: 'idle', label: 'Idle' },
+  { id: 'run', label: 'Run' },
+  { id: 'celebrate', label: 'Celebrate' },
+  { id: 'keeper', label: 'Keeper' },
 ];
 
 const candidateSummaries = [
@@ -62,7 +68,8 @@ const candidateSummaries = [
 
 export function AvatarComparisonLab() {
   const [motion, setMotion] = useState<MotionId>('run');
-  const currentMotion = motionOptions.find((item) => item.id === motion) ?? motionOptions[0];
+  const [kitId, setKitId] = useState<CountryKitId>('england');
+  const selectedKit = countryKits.find((kit) => kit.id === kitId) ?? countryKits[0];
 
   return (
     <div className="space-y-6">
@@ -88,43 +95,66 @@ export function AvatarComparisonLab() {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-3">
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Ready Player Me kit</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-50">{selectedKit.name} footballer preview</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:flex lg:flex-wrap lg:justify-end">
+            {countryKits.map((kit) => (
+              <button
+                key={kit.id}
+                onClick={() => setKitId(kit.id as CountryKitId)}
+                className={`flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                  kit.id === kitId
+                    ? 'border-cyan-300 bg-cyan-300 text-slate-950'
+                    : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-cyan-400'
+                }`}
+              >
+                <span className="flex h-5 w-7 overflow-hidden rounded-sm border border-white/20">
+                  <span className="h-full flex-1" style={{ backgroundColor: kit.primary }} />
+                  <span className="h-full flex-1" style={{ backgroundColor: kit.secondary }} />
+                  <span className="h-full flex-1" style={{ backgroundColor: kit.accent }} />
+                </span>
+                {kit.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.8fr)]">
         <CandidateCard
-          title="A. Premium Web Avatar"
+          title={`${selectedKit.name} Ready Player Me Footballer`}
           badge="Ready Player Me"
-          verdict="Best visual ceiling"
-          notes={['Local RPM rig sample', 'RPM mocap library', '2.6 MB body']}
+          verdict="Main direction"
+          notes={[`${selectedKit.name} shirt, shorts, socks`, 'Short sleeves + crew-neck collar', 'Studded football boots on each foot', 'Jersey is a real skinned mesh bound to Spine/Hips/Neck', 'Local RPM rig sample', 'RPM mocap clips']}
           source="readyplayerme/animation-library"
         >
-          <RpmStage motion={motion} />
+          <RpmStage motion={motion} kit={selectedKit} />
         </CandidateCard>
 
-        <CandidateCard
-          title="B. Clean Free Asset Pack"
-          badge="Quaternius CC0"
-          verdict="Fastest safe fallback"
-          notes={['Local GLB', '43 bundled clips', 'No attribution required']}
-          source="Quaternius Universal Animation Library 2"
-        >
-          <QuaterniusStage clipName={currentMotion.quaterniusClip} />
-        </CandidateCard>
-
-        <CandidateCard
-          title="C. Current Pipeline"
-          badge="Curated Mixamo"
-          verdict="Most practical today"
-          notes={['Local optimized bodies', 'Football prop', 'Known integration path']}
-          source="Adobe Mixamo + our existing converter"
-        >
-          <MixamoCharacterStage
-            mood={currentMotion.mixamoMood}
-            avatarId={currentMotion.mixamoAvatar}
-            featureId="football"
-            height="lg"
-            label={`${currentMotion.label} test`}
-            framing="wide"
-          />
-        </CandidateCard>
+        <aside className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Country kit system</p>
+          <h3 className="mt-2 text-2xl font-semibold text-slate-50">{selectedKit.name}</h3>
+          <div className="mt-5 grid grid-cols-5 gap-2">
+            <KitSwatch label="Shirt" color={selectedKit.primary} />
+            <KitSwatch label="Trim" color={selectedKit.secondary} />
+            <KitSwatch label="Accent" color={selectedKit.accent} />
+            <KitSwatch label="Shorts" color={selectedKit.shorts} />
+            <KitSwatch label="Socks" color={selectedKit.socks} />
+          </div>
+          <div className="mt-5 grid grid-cols-5 gap-2">
+            <KitSwatch label="Boots" color={selectedKit.boot} />
+            <KitSwatch label="Sole" color={selectedKit.sole} />
+          </div>
+          <div className="mt-5 space-y-3 text-sm leading-6 text-slate-300">
+            <p>Use Ready Player Me as the avatar base, then bind a procedural football kit to the same skeleton.</p>
+            <p>The shirt, shorts, socks, and studded boots are real skinned meshes tied to the Spine, Hips, Leg, and Foot bones, so they deform with the body during any animation.</p>
+            <p>Next step after approval: replace the main `/avatar` character grid with this RPM footballer path.</p>
+          </div>
+        </aside>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
@@ -190,13 +220,18 @@ function CandidateCard({
   );
 }
 
-function RpmStage({ motion }: { motion: MotionId }) {
+function RpmStage({ motion, kit }: { motion: MotionId; kit: (typeof countryKits)[number] }) {
   return (
     <StageShell label="RPM local GLB">
-      <Canvas camera={{ position: [0, 1.2, 4.6], fov: 34 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}>
+      <Canvas
+        camera={{ position: [0, 1.2, 4.6], fov: 34 }}
+        dpr={[1, 1.6]}
+        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}
+        style={{ height: '100%', width: '100%' }}
+      >
         <Suspense fallback={null}>
           <StadiumLights />
-          <RpmModel motion={motion} />
+          <RpmModel motion={motion} kit={kit} />
           <PitchMarks />
           <ContactShadows position={[0, -1.2, 0]} opacity={0.34} scale={4.6} blur={2.2} far={2} />
           <Environment preset="city" />
@@ -206,7 +241,7 @@ function RpmStage({ motion }: { motion: MotionId }) {
   );
 }
 
-function RpmModel({ motion }: { motion: MotionId }) {
+function RpmModel({ motion, kit }: { motion: MotionId; kit: (typeof countryKits)[number] }) {
   const group = useRef<Group>(null);
   const avatar = useGLTF(readyPlayerMeAvatar);
   const idle = useGLTF(readyPlayerMeAnimations.idle);
@@ -225,6 +260,7 @@ function RpmModel({ motion }: { motion: MotionId }) {
         asset.animations.map((clip) => {
           const nextClip = clip.clone();
           nextClip.name = key;
+          anchorRpmHipsToStage(nextClip);
           return nextClip;
         }),
       ),
@@ -244,53 +280,40 @@ function RpmModel({ motion }: { motion: MotionId }) {
   return (
     <group ref={group} position={[0, -1.08, 0]} rotation={[0, -0.2, 0]} scale={1.28}>
       <primitive object={scene} />
-      <FootballOrbit motion={motion} accent="#22d3ee" />
+      <RpmFootballerKit avatar={scene} kit={kit} />
+      <FootballOrbit motion={motion} accent={kit.accent} />
     </group>
   );
 }
 
-function QuaterniusStage({ clipName }: { clipName: string }) {
-  return (
-    <StageShell label="CC0 local GLB">
-      <Canvas camera={{ position: [0, 1.05, 5.2], fov: 32 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }}>
-        <Suspense fallback={null}>
-          <StadiumLights />
-          <QuaterniusModel clipName={clipName} />
-          <PitchMarks />
-          <ContactShadows position={[0, -1.18, 0]} opacity={0.36} scale={4.6} blur={2.2} far={2} />
-          <Environment preset="warehouse" />
-        </Suspense>
-      </Canvas>
-    </StageShell>
-  );
-}
-
-function QuaterniusModel({ clipName }: { clipName: string }) {
-  const group = useRef<Group>(null);
-  const gltf = useGLTF(quaterniusModel);
-  const scene = useMemo(() => clone(gltf.scene), [gltf.scene]);
-  const { actions } = useAnimations(gltf.animations, group);
+function RpmFootballerKit({ avatar, kit }: { avatar: Object3D; kit: CountryKit }) {
+  const kitState = useMemo(() => buildKit(avatar, kit), [avatar, kit]);
 
   useEffect(() => {
-    const action = actions[clipName] ?? actions.Idle_FoldArms_Loop ?? actions.A_TPose;
-    if (!action) return;
-    action.reset().fadeIn(0.2).play();
     return () => {
-      action.fadeOut(0.2);
+      disposeKit(kitState.parts);
     };
-  }, [actions, clipName]);
+  }, [kitState]);
 
-  return (
-    <group ref={group} position={[0, -1.08, 0]} rotation={[0, -0.22, 0]} scale={1.5}>
-      <primitive object={scene} />
-      <FootballOrbit motion="run" accent="#f59e0b" />
-    </group>
-  );
+  return <primitive object={kitState.group} />;
+}
+function anchorRpmHipsToStage(clip: { tracks: Array<{ name: string; values: { length: number; [index: number]: number } }> }) {
+  clip.tracks.forEach((track) => {
+    if (!track.name.endsWith('Hips.position')) return;
+    const values = track.values;
+    const originX = values[0] ?? 0;
+    const originZ = values[2] ?? 0;
+
+    for (let index = 0; index < values.length; index += 3) {
+      values[index] = originX;
+      values[index + 2] = originZ;
+    }
+  });
 }
 
 function StageShell({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="relative h-80 overflow-hidden bg-slate-950">
+    <div className="relative h-[28rem] overflow-hidden bg-slate-950 [&_canvas]:!h-full [&_canvas]:!w-full">
       {children}
       <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-200 backdrop-blur">
         {label}
@@ -377,5 +400,13 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
 if (typeof window !== 'undefined') {
   useGLTF.preload(readyPlayerMeAvatar);
   Object.values(readyPlayerMeAnimations).forEach((url) => useGLTF.preload(url));
-  useGLTF.preload(quaterniusModel);
+}
+
+function KitSwatch({ label, color }: { label: string; color: string }) {
+  return (
+    <div>
+      <div className="h-10 rounded-lg border border-white/10" style={{ backgroundColor: color }} />
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+    </div>
+  );
 }

@@ -86,6 +86,8 @@ export type WorldCupMatchSummary = {
   group?: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamId: number | null;
+  awayTeamId: number | null;
   homeTeamVisual: TeamVisual;
   awayTeamVisual: TeamVisual;
   homeScore: number | null;
@@ -172,6 +174,8 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
     group: m.group,
     homeTeam: m.homeTeam?.name ?? 'TBD',
     awayTeam: m.awayTeam?.name ?? 'TBD',
+    homeTeamId: m.homeTeam?.id ?? null,
+    awayTeamId: m.awayTeam?.id ?? null,
     homeTeamVisual: toTeamVisual(m.homeTeam),
     awayTeamVisual: toTeamVisual(m.awayTeam),
     homeScore: m.score?.fullTime?.home ?? null,
