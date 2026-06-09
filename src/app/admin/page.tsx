@@ -39,7 +39,7 @@ export default function AdminPage() {
       .from('users_profile')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       console.error('Profile query error:', profileError);
@@ -48,7 +48,6 @@ export default function AdminPage() {
     }
 
     if ((profile as { role: string } | null)?.role !== 'admin') {
-      console.log('User role:', (profile as { role: string } | null)?.role, 'User ID:', user.id);
       setLoading(false);
       return;
     }
