@@ -1,16 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-browser';
 
 export function AuthPanel() {
+  const searchParams = useSearchParams();
+  const signupToken = searchParams.get('signup_token');
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(signupToken ? 'signup' : 'login');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [groupName, setGroupName] = useState<string | null>(null);
+  const [groupId, setGroupId] = useState<string | null>(null);
   const isSupabaseReady = Boolean(supabase);
+
+  // Validate signup token and get group info
+  useEffect(() => {
+    if (!signupToken || !supabase) return;
+
+    supabase
+      .from('group_signup_tokens')
+      .select('group_id, groups(name)')
+      .eq('token', signupToken)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data) {
+          setMessage('Invalid or expired signup link.');
+          return;
+        }
+        const row = data as unknown as { group_id: string; groups: { name: string } | { name: string }[] };
+        setGroupId(row.group_id);
+        const g = row.groups;
+        setGroupName(Array.isArray(g) ? g[0]?.name : g?.name ?? null);
+      });
+  }, [signupToken]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,13 +58,22 @@ export function AuthPanel() {
           options: {
             data: {
               username: username.trim(),
+              ...(groupId ? { group_id: groupId } : {}),
             },
           },
         });
         if (error) throw error;
 
+        if (data.session && groupId) {
+          // Assign user to group immediately
+          await supabase!
+            .from('users_profile')
+            .update({ group_id: groupId })
+            .eq('id', data.user!.id);
+        }
+
         if (data.session) {
-          window.location.assign('/groups');
+          window.location.assign('/');
           return;
         }
 
@@ -46,7 +82,7 @@ export function AuthPanel() {
         const { error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setMessage('Logged in.');
-        window.location.assign('/groups');
+        window.location.assign('/');
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Something went wrong');
@@ -62,6 +98,19 @@ export function AuthPanel() {
           Supabase env vars are missing, so auth is disabled for now.
         </p>
       )}
+
+      {signupToken && groupName && (
+        <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          Joining group: <strong>{groupName}</strong>
+        </div>
+      )}
+
+      {signupToken && !groupName && message && (
+        <div className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          {message}
+        </div>
+      )}
+
       <div className="mb-4 flex gap-2">
         <button className={`rounded px-3 py-1 text-sm ${mode === 'login' ? 'bg-cyan-500 text-slate-950' : 'bg-surface-raised'}`} onClick={() => setMode('login')} type="button">Login</button>
         <button className={`rounded px-3 py-1 text-sm ${mode === 'signup' ? 'bg-cyan-500 text-slate-950' : 'bg-surface-raised'}`} onClick={() => setMode('signup')} type="button">Sign up</button>
@@ -92,11 +141,11 @@ export function AuthPanel() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button disabled={loading || !isSupabaseReady} className="rounded bg-cyan-500 px-4 py-2 font-semibold text-slate-950 disabled:opacity-60">
+        <button disabled={loading || !isSupabaseReady || (!!signupToken && !groupName)} className="rounded bg-cyan-500 px-4 py-2 font-semibold text-slate-950 disabled:opacity-60">
           {!isSupabaseReady ? 'Unavailable' : loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create account'}
         </button>
       </form>
-      {message && <p className="mt-3 text-sm text-body">{message}</p>}
+      {message && !signupToken && <p className="mt-3 text-sm text-body">{message}</p>}
     </div>
   );
 }
