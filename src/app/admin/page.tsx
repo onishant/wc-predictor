@@ -35,13 +35,20 @@ export default function AdminPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('users_profile')
       .select('role')
       .eq('id', user.id)
       .single();
 
+    if (profileError) {
+      console.error('Profile query error:', profileError);
+      setLoading(false);
+      return;
+    }
+
     if ((profile as { role: string } | null)?.role !== 'admin') {
+      console.log('User role:', (profile as { role: string } | null)?.role, 'User ID:', user.id);
       setLoading(false);
       return;
     }
