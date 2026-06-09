@@ -142,8 +142,6 @@ export default function LeaderboardPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href="/fixtures" className="rounded-full border border-border-default px-4 py-2 text-sm font-medium hover:bg-surface-raised">Fixtures</Link>
-              <Link href="/groups" className="rounded-full border border-cyan-700 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-950/50">Groups</Link>
-              <Link href="/auth" className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400">Login / Sign up</Link>
             </div>
           </div>
         </header>
