@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { VenueMap } from '@/components/fixtures/venue-map';
 import { VenueCard } from '@/components/fixtures/venue-card';
 import { MatchCard } from '@/components/fixtures/match-card';
 import { FixturesByDate } from '@/components/fixtures/fixtures-by-date';
 import { PredictionPanel } from '@/components/fixtures/prediction-panel';
 import { buildVenueRouting } from '@/lib/fixture-venue-routing';
+import { supabase } from '@/lib/supabase-browser';
 import type { WorldCupMatchSummary, TeamWorldCupStats } from '@/lib/football-data';
 import type { WorldCupVenue } from '@/lib/world-cup-venues';
 
@@ -24,10 +25,43 @@ type Props = {
 
 type ViewMode = 'stadium' | 'date';
 
-export function FixturesClient({ venues, matches, userId, teamStats = [], predictions = {} }: Props) {
+export function FixturesClient({ venues, matches, userId, teamStats = [], predictions: initialPredictions = {} }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>('stadium');
   const [selectedVenueId, setSelectedVenueId] = useState(venues[0]?.id ?? '');
   const [predictionMatchId, setPredictionMatchId] = useState<string | null>(null);
+  const [predictions, setPredictions] = useState(initialPredictions);
+  const [currentUserId, setCurrentUserId] = useState(userId);
+
+  // Load predictions from Supabase
+  const loadPredictions = useCallback(async (uid: string) => {
+    if (!supabase || !uid) return;
+    const { data } = await supabase
+      .from('predictions')
+      .select('match_external_id, predicted_result, pred_home_score, pred_away_score')
+      .eq('user_id', uid);
+    if (data) {
+      const map: Record<string, { predicted_result: 'home' | 'away' | 'draw'; pred_home_score: number; pred_away_score: number }> = {};
+      for (const row of data) {
+        map[row.match_external_id] = {
+          predicted_result: row.predicted_result,
+          pred_home_score: row.pred_home_score,
+          pred_away_score: row.pred_away_score,
+        };
+      }
+      setPredictions(map);
+    }
+  }, []);
+
+  // Get user and load predictions on mount
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUserId(user.id);
+        loadPredictions(user.id);
+      }
+    });
+  }, [loadPredictions]);
 
   const { matchesByVenue } = useMemo(() => buildVenueRouting(matches, venues), [matches, venues]);
 
@@ -185,9 +219,10 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
       {viewMode === 'date' && (
         <FixturesByDate
           matches={matches}
-          userId={userId}
+          userId={currentUserId}
           teamStats={teamStats}
           predictions={predictions}
+          onSaved={() => { if (currentUserId) loadPredictions(currentUserId); }}
         />
       )}
 
@@ -200,7 +235,7 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
           homeTeamVisual={predictionMatch.homeTeamVisual}
           awayTeamVisual={predictionMatch.awayTeamVisual}
           kickoffUtc={predictionMatch.utcDate}
-          userId={userId}
+          userId={currentUserId}
           group={predictionMatch.group}
           homeTeamStats={teamStats.find((s) => s.teamName === predictionMatch.homeTeam) ?? null}
           awayTeamStats={teamStats.find((s) => s.teamName === predictionMatch.awayTeam) ?? null}
@@ -208,7 +243,7 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
           initialHomeScore={predictions[String(predictionMatch.id)]?.pred_home_score ?? null}
           initialAwayScore={predictions[String(predictionMatch.id)]?.pred_away_score ?? null}
           onClose={() => setPredictionMatchId(null)}
-          onSaved={() => {}}
+          onSaved={() => { if (currentUserId) loadPredictions(currentUserId); }}
         />
       )}
     </>

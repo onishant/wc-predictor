@@ -14,6 +14,7 @@ type Props = {
     pred_home_score: number;
     pred_away_score: number;
   }>;
+  onSaved?: () => void;
 };
 
 type MatchGroup = {
@@ -67,7 +68,7 @@ const statusColors: Record<string, string> = {
   CANCELLED: 'bg-red-500/20 text-red-300',
 };
 
-export function FixturesByDate({ matches, userId, teamStats = [], predictions = {} }: Props) {
+export function FixturesByDate({ matches, userId, teamStats = [], predictions = {}, onSaved }: Props) {
   const [predictionMatchId, setPredictionMatchId] = useState<string | null>(null);
 
   const groups = useMemo(() => groupMatchesByDate(matches), [matches]);
@@ -230,7 +231,7 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
           initialHomeScore={predictions[String(predictionMatch.id)]?.pred_home_score ?? null}
           initialAwayScore={predictions[String(predictionMatch.id)]?.pred_away_score ?? null}
           onClose={() => setPredictionMatchId(null)}
-          onSaved={() => {}}
+          onSaved={onSaved}
         />
       )}
     </>
