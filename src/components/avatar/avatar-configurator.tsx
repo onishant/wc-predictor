@@ -71,7 +71,7 @@ export function AvatarConfigurator() {
         return;
       }
 
-      const [{ data: progressData }, { data: profileData }, { data: teamsData }] = await Promise.all([
+      const [progressResult, profileResult] = await Promise.all([
         supabase!
           .from('user_progress')
           .select('points, xp, current_streak, best_streak, character_tier')
@@ -82,17 +82,20 @@ export function AvatarConfigurator() {
           .select('selected_avatar_id, equipped_gesture, equipped_feature, unlocked_gestures, unlocked_features, xp_spent, supported_team_id')
           .eq('user_id', authUserId)
           .maybeSingle<AvatarProfileRow>(),
-        supabase!
-          .from('teams')
-          .select('id, name, crest_url')
-          .order('name'),
       ]);
 
+      const teamsResult = await supabase!
+        .from('teams')
+        .select('id, name, crest_url')
+        .order('name');
+
       if (!mounted) return;
-      setProgress(progressData ?? { points: 0, xp: 0, current_streak: 0, best_streak: 0, character_tier: 'Rookie' });
-      setProfile(normalizeAvatarProfile(toAvatarProfile(profileData)));
-      setSupportedTeamId((profileData as AvatarProfileRow | null)?.supported_team_id ?? null);
-      setTeams((teamsData as TeamOption[] | null) ?? []);
+      setProgress(progressResult.data ?? { points: 0, xp: 0, current_streak: 0, best_streak: 0, character_tier: 'Rookie' });
+      setProfile(normalizeAvatarProfile(toAvatarProfile(profileResult.data)));
+      setSupportedTeamId((profileResult.data as AvatarProfileRow | null)?.supported_team_id ?? null);
+      setTeams((teamsResult.data as TeamOption[] | null) ?? []);
+      if (teamsResult.error) console.error('Teams query error:', teamsResult.error);
+      if (profileResult.error) console.error('Profile query error:', profileResult.error);
       setLoading(false);
     }
 
