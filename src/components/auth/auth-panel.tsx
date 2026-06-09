@@ -37,7 +37,7 @@ export function AuthPanel() {
         if (error) throw error;
 
         if (data.session) {
-          window.location.assign('/fixtures');
+          window.location.assign('/groups');
           return;
         }
 
@@ -46,7 +46,7 @@ export function AuthPanel() {
         const { error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setMessage('Logged in.');
-        window.location.assign('/fixtures');
+        window.location.assign('/groups');
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Something went wrong');
