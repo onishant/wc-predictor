@@ -17,18 +17,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (skipCheck) return;
 
-    supabase!.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
+    let mounted = true;
+
+    // First check session (fast, local storage)
+    supabase!.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+
+      if (!session) {
         router.replace('/auth');
         return;
       }
 
-      // Verify user still exists in database
+      // Verify user still exists in DB
       const { data: profile } = await supabase!
         .from('users_profile')
         .select('id')
-        .eq('id', user.id)
+        .eq('id', session.user.id)
         .maybeSingle();
+
+      if (!mounted) return;
 
       if (!profile) {
         await supabase!.auth.signOut();
@@ -39,13 +46,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       setAuthed(true);
     });
 
-    const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        router.replace('/auth');
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => { mounted = false; };
   }, [skipCheck, router]);
 
   if (!skipCheck && !authed) {

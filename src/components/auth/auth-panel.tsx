@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-browser';
 
 export function AuthPanel() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const signupToken = searchParams.get('signup_token');
 
@@ -73,7 +74,7 @@ export function AuthPanel() {
         }
 
         if (data.session) {
-          window.location.assign('/');
+          router.push('/');
           return;
         }
 
@@ -82,7 +83,7 @@ export function AuthPanel() {
         const { error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) throw error;
         setMessage('Logged in.');
-        window.location.assign('/');
+        router.push('/');
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Something went wrong');
