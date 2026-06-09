@@ -104,7 +104,6 @@ export function MatchCard({
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="sm" />
-          <span className="truncate text-sm font-medium text-heading">{homeTeam}</span>
         </div>
 
         <div className="flex flex-col items-center px-2">
@@ -118,7 +117,6 @@ export function MatchCard({
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-          <span className="truncate text-sm font-medium text-heading">{awayTeam}</span>
           <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="sm" />
         </div>
       </div>
