@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import { AppNav } from '@/components/app-nav';
-import { MixamoCharacterStage } from '@/components/characters/mixamo-character-stage';
+import { AvatarBadge } from '@/components/avatar/avatar-badge';
 import { getAvatarName, isAvatarId } from '@/lib/avatar-catalog';
 import type { AvatarFeatureId, AvatarId } from '@/lib/avatar-catalog';
-import type { CharacterMood } from '@/lib/character-progress';
 
 type LeaderboardRow = {
   user_id: string;
@@ -19,8 +18,10 @@ type LeaderboardRow = {
   username: string | null;
   group_id: string | null;
   selected_avatar_id?: string | null;
-  equipped_gesture?: string | null;
   equipped_feature?: string | null;
+  supported_team_id?: string | null;
+  team_crest_url?: string | null;
+  team_name?: string | null;
 };
 
 type Tab = 'group' | 'overall';
@@ -32,23 +33,6 @@ function tierColor(tier: string) {
     case 'pro': return 'bg-amber-500/20 text-amber-200 ring-amber-500/30';
     default: return 'bg-surface-raised text-heading ring-border-strong';
   }
-}
-
-function tierMood(tier: string, rank: number): CharacterMood {
-  if (rank === 1) return 'victory';
-  switch (tier.toLowerCase()) {
-    case 'legend':
-    case 'elite': return 'excited';
-    case 'pro': return 'jogging';
-    default: return 'idle';
-  }
-}
-
-function toCharacterMood(value?: string | null): CharacterMood | null {
-  if (['idle', 'excited', 'victory', 'defeat', 'jogging', 'goalkeeperCatchMedium', 'goalkeeperCatchHigh'].includes(value ?? '')) {
-    return value as CharacterMood;
-  }
-  return null;
 }
 
 function toAvatarId(value?: string | null): AvatarId {
@@ -96,7 +80,6 @@ export default function LeaderboardPage() {
       const uid = user?.id ?? null;
       setUserId(uid);
 
-      // Get user's group
       if (uid) {
         const { data: profile } = await supabase!
           .from('users_profile')
@@ -111,10 +94,9 @@ export default function LeaderboardPage() {
         if (!gid) setTab('overall');
       }
 
-      // Get leaderboard
       const { data, error: fetchError } = await supabase!
         .from('leaderboard')
-        .select('user_id, points, xp, current_streak, best_streak, character_tier, username, group_id, selected_avatar_id, equipped_gesture, equipped_feature')
+        .select('user_id, points, xp, current_streak, best_streak, character_tier, username, group_id, selected_avatar_id, equipped_feature, supported_team_id, team_crest_url, team_name')
         .order('points', { ascending: false })
         .order('xp', { ascending: false });
 
@@ -134,7 +116,6 @@ export default function LeaderboardPage() {
     ? allRows.filter(r => r.group_id === userGroupId).map((r, i) => ({ ...r, rank: i + 1 }))
     : allRows;
 
-  // User's overall rank (always computed from full list)
   const userOverallRank = userId ? allRows.findIndex(r => r.user_id === userId) + 1 : 0;
   const userGroupRank = userId && userGroupId
     ? allRows.filter(r => r.group_id === userGroupId).findIndex(r => r.user_id === userId) + 1
@@ -174,7 +155,6 @@ export default function LeaderboardPage() {
           </div>
         </header>
 
-        {/* Overall rank badge */}
         {userId && userOverallRank > 0 && (
           <div className="rounded-2xl border border-border-subtle bg-surface/60 p-4 flex items-center justify-between">
             <div>
@@ -190,7 +170,6 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        {/* Tabs */}
         {userGroupId && (
           <div className="flex gap-2 rounded-xl bg-surface-raised p-1">
             <button
@@ -222,18 +201,18 @@ export default function LeaderboardPage() {
 
         {loading && <p className="text-sm text-muted">Loading…</p>}
 
-        {/* Top 3 */}
         {topThree.length > 0 && (
           <section className="grid gap-4 md:grid-cols-3">
             {topThree.map((row) => (
               <article key={row.user_id} className="rounded-3xl border border-border-subtle bg-surface p-5 shadow-lg">
-                <MixamoCharacterStage
-                  mood={toCharacterMood(row.equipped_gesture) ?? tierMood(row.character_tier, row.rank)}
-                  avatarId={toAvatarId(row.selected_avatar_id)}
-                  featureId={toFeatureId(row.equipped_feature)}
-                  height="sm"
-                  label={`Rank #${row.rank} avatar`}
-                />
+                <div className="flex justify-center">
+                  <AvatarBadge
+                    avatarId={toAvatarId(row.selected_avatar_id)}
+                    teamCrestUrl={row.team_crest_url}
+                    teamName={row.team_name}
+                    size="lg"
+                  />
+                </div>
                 <div className="mt-4 flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-[0.18em] text-muted">Rank #{row.rank}</p>
@@ -254,7 +233,6 @@ export default function LeaderboardPage() {
           </section>
         )}
 
-        {/* Full table */}
         <section className="overflow-hidden rounded-3xl border border-border-subtle bg-surface shadow-lg">
           <div className="border-b border-border-subtle px-5 py-4">
             <h2 className="text-lg font-semibold">
@@ -281,8 +259,18 @@ export default function LeaderboardPage() {
                   <tr key={row.user_id} className={`border-t border-border-subtle hover:bg-surface-raised/50 ${row.user_id === userId ? 'bg-cyan-500/5' : ''}`}>
                     <td className="px-5 py-3 font-medium text-body">#{row.rank}</td>
                     <td className="px-5 py-3">
-                      {row.username ?? 'Anonymous'}
-                      {row.user_id === userId && <span className="ml-2 text-xs text-cyan-400">(you)</span>}
+                      <div className="flex items-center gap-3">
+                        <AvatarBadge
+                          avatarId={toAvatarId(row.selected_avatar_id)}
+                          teamCrestUrl={row.team_crest_url}
+                          teamName={row.team_name}
+                          size="sm"
+                        />
+                        <div>
+                          {row.username ?? 'Anonymous'}
+                          {row.user_id === userId && <span className="ml-2 text-xs text-cyan-400">(you)</span>}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-body">{avatarLabel(row)}</td>
                     <td className="px-5 py-3">

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { MixamoCharacterStage } from '@/components/characters/mixamo-character-stage';
@@ -30,12 +31,21 @@ type AvatarProfileRow = {
   unlocked_gestures: CharacterMood[] | null;
   unlocked_features: Exclude<AvatarFeatureId, 'none'>[] | null;
   xp_spent: number | null;
+  supported_team_id: string | null;
+};
+
+type TeamOption = {
+  id: string;
+  name: string;
+  crest_url: string | null;
 };
 
 export function AvatarConfigurator() {
   const [userId, setUserId] = useState('');
   const [progress, setProgress] = useState<ProgressRow | null>(null);
   const [profile, setProfile] = useState<AvatarProfile>(DEFAULT_AVATAR_PROFILE);
+  const [supportedTeamId, setSupportedTeamId] = useState<string | null>(null);
+  const [teams, setTeams] = useState<TeamOption[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(Boolean(supabase));
 
@@ -61,7 +71,7 @@ export function AvatarConfigurator() {
         return;
       }
 
-      const [{ data: progressData }, { data: profileData }] = await Promise.all([
+      const [{ data: progressData }, { data: profileData }, { data: teamsData }] = await Promise.all([
         supabase!
           .from('user_progress')
           .select('points, xp, current_streak, best_streak, character_tier')
@@ -69,14 +79,20 @@ export function AvatarConfigurator() {
           .maybeSingle<ProgressRow>(),
         supabase!
           .from('user_avatar_profiles')
-          .select('selected_avatar_id, equipped_gesture, equipped_feature, unlocked_gestures, unlocked_features, xp_spent')
+          .select('selected_avatar_id, equipped_gesture, equipped_feature, unlocked_gestures, unlocked_features, xp_spent, supported_team_id')
           .eq('user_id', authUserId)
           .maybeSingle<AvatarProfileRow>(),
+        supabase!
+          .from('teams')
+          .select('id, name, crest_url')
+          .order('name'),
       ]);
 
       if (!mounted) return;
       setProgress(progressData ?? { points: 0, xp: 0, current_streak: 0, best_streak: 0, character_tier: 'Rookie' });
       setProfile(normalizeAvatarProfile(toAvatarProfile(profileData)));
+      setSupportedTeamId((profileData as AvatarProfileRow | null)?.supported_team_id ?? null);
+      setTeams((teamsData as TeamOption[] | null) ?? []);
       setLoading(false);
     }
 
@@ -109,6 +125,7 @@ export function AvatarConfigurator() {
       unlocked_gestures: nextProfile.unlockedGestures,
       unlocked_features: nextProfile.unlockedFeatures,
       xp_spent: nextProfile.xpSpent,
+      supported_team_id: supportedTeamId,
     }, { onConflict: 'user_id' });
 
     if (error) {
@@ -154,6 +171,26 @@ export function AvatarConfigurator() {
       unlockedGestures: [...profile.unlockedGestures, gestureId],
       xpSpent: profile.xpSpent + cost,
     }, 'Gesture unlocked and equipped.');
+  }
+
+  async function selectTeam(teamId: string | null) {
+    if (!supabase || !userId) return;
+    setSupportedTeamId(teamId);
+    const { error } = await supabase.from('user_avatar_profiles').upsert({
+      user_id: userId,
+      selected_avatar_id: profile.selectedAvatarId,
+      equipped_gesture: profile.equippedGesture,
+      equipped_feature: profile.equippedFeature,
+      unlocked_gestures: profile.unlockedGestures,
+      unlocked_features: profile.unlockedFeatures,
+      xp_spent: profile.xpSpent,
+      supported_team_id: teamId,
+    }, { onConflict: 'user_id' });
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage(teamId ? 'Supported team updated.' : 'Team support removed.');
+    }
   }
 
   function unlockFeature(featureId: Exclude<AvatarFeatureId, 'none'>, cost: number) {
@@ -273,6 +310,39 @@ export function AvatarConfigurator() {
                 />
               );
             })}
+          </div>
+        </ConfiguratorSection>
+        <ConfiguratorSection title="Supported Team">
+          <p className="mb-3 text-sm text-muted">Pick your team. Their crest will appear as a badge on your leaderboard avatar.</p>
+          <div className="grid gap-2 md:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => selectTeam(null)}
+              className={`rounded-xl border p-3 text-left text-sm transition ${
+                supportedTeamId === null
+                  ? 'border-cyan-400 bg-cyan-500/10'
+                  : 'border-border-subtle bg-surface hover:border-border-strong'
+              }`}
+            >
+              <p className="font-medium text-heading">No team</p>
+            </button>
+            {teams.map((team) => (
+              <button
+                key={team.id}
+                type="button"
+                onClick={() => selectTeam(team.id)}
+                className={`flex items-center gap-2 rounded-xl border p-3 text-left text-sm transition ${
+                  supportedTeamId === team.id
+                    ? 'border-cyan-400 bg-cyan-500/10'
+                    : 'border-border-subtle bg-surface hover:border-border-strong'
+                }`}
+              >
+                {team.crest_url && (
+                  <Image src={team.crest_url} alt="" width={20} height={20} className="object-contain" unoptimized />
+                )}
+                <span className="truncate font-medium text-heading">{team.name}</span>
+              </button>
+            ))}
           </div>
         </ConfiguratorSection>
       </section>
