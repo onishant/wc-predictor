@@ -21,6 +21,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-map-gl": "^8.1.1",
+    "react-nice-avatar": "^1.5.0",
     "three": "^0.184.0"
   },
   "devDependencies": {

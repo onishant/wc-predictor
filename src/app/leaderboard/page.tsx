@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import { AppNav } from '@/components/app-nav';
 import { AvatarBadge } from '@/components/avatar/avatar-badge';
-import { getAvatarName, isAvatarId } from '@/lib/avatar-catalog';
-import type { AvatarFeatureId, AvatarId } from '@/lib/avatar-catalog';
+import type { AvatarFeatureId } from '@/lib/avatar-catalog';
 
 type LeaderboardRow = {
   user_id: string;
@@ -35,23 +34,17 @@ function tierColor(tier: string) {
   }
 }
 
-function toAvatarId(value?: string | null): AvatarId {
-  if (isAvatarId(value)) return value;
-  return 'striker';
-}
-
 function toFeatureId(value?: string | null): AvatarFeatureId {
   if (value === 'football' || value === 'clubAura' || value === 'captainBand' || value === 'championGlow') return value;
   return 'none';
 }
 
 function avatarLabel(row: LeaderboardRow) {
-  const avatar = toAvatarId(row.selected_avatar_id);
   const feature = toFeatureId(row.equipped_feature);
-  const avatarName = getAvatarName(avatar);
-  if (feature === 'none') return avatarName;
+  const teamName = row.team_name ?? 'No team';
+  if (feature === 'none') return teamName;
   const featureName = feature === 'football' ? 'Football control' : feature === 'clubAura' ? 'Club aura' : feature === 'captainBand' ? 'Captain band' : 'Champion glow';
-  return `${avatarName} · ${featureName}`;
+  return `${teamName} · ${featureName}`;
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
@@ -207,7 +200,7 @@ export default function LeaderboardPage() {
               <article key={row.user_id} className="rounded-3xl border border-border-subtle bg-surface p-5 shadow-lg">
                 <div className="flex justify-center">
                   <AvatarBadge
-                    avatarId={toAvatarId(row.selected_avatar_id)}
+                    seed={row.user_id}
                     teamCrestUrl={row.team_crest_url}
                     teamName={row.team_name}
                     size="lg"
@@ -261,7 +254,7 @@ export default function LeaderboardPage() {
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <AvatarBadge
-                          avatarId={toAvatarId(row.selected_avatar_id)}
+                          seed={row.user_id}
                           teamCrestUrl={row.team_crest_url}
                           teamName={row.team_name}
                           size="sm"
