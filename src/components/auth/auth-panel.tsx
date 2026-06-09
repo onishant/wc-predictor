@@ -80,9 +80,17 @@ export function AuthPanel() {
 
         setMessage('Signup successful. Check your email if confirmation is enabled.');
       } else {
-        const { error } = await supabase!.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        setMessage('Logged in.');
+        const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
+        if (error) {
+          setMessage(error.message);
+          setLoading(false);
+          return;
+        }
+        if (!data.session) {
+          setMessage('No session created. Your email may need confirmation first. Check your inbox.');
+          setLoading(false);
+          return;
+        }
         router.push('/');
       }
     } catch (err) {

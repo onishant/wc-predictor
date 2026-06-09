@@ -9,53 +9,44 @@ const PUBLIC_PATHS = ['/auth'];
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [authed, setAuthed] = useState(false);
+  const [state, setState] = useState<'loading' | 'authed' | 'redirecting'>('loading');
 
   const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
   const skipCheck = isPublic || !supabase;
 
   useEffect(() => {
-    if (skipCheck) return;
+    if (skipCheck) {
+      setState('authed');
+      return;
+    }
 
-    let mounted = true;
+    let cancelled = false;
 
-    // First check session (fast, local storage)
-    supabase!.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
+    supabase!.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
 
-      if (!session) {
+      if (session) {
+        setState('authed');
+      } else {
+        setState('redirecting');
         router.replace('/auth');
-        return;
       }
-
-      // Verify user still exists in DB
-      const { data: profile } = await supabase!
-        .from('users_profile')
-        .select('id')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (!mounted) return;
-
-      if (!profile) {
-        await supabase!.auth.signOut();
-        router.replace('/auth');
-        return;
-      }
-
-      setAuthed(true);
     });
 
-    return () => { mounted = false; };
+    return () => { cancelled = true; };
   }, [skipCheck, router]);
 
-  if (!skipCheck && !authed) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted">Loading…</p>
-      </main>
-    );
+  if (skipCheck || state === 'authed') {
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  if (state === 'redirecting') {
+    return null;
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background">
+      <p className="text-sm text-muted">Loading…</p>
+    </main>
+  );
 }
