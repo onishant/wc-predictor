@@ -82,15 +82,16 @@ export function AuthPanel() {
       } else {
         const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) {
-          setMessage(error.message);
+          setMessage(`Login error: ${error.message}`);
           setLoading(false);
           return;
         }
         if (!data.session) {
-          setMessage('No session created. Your email may need confirmation first. Check your inbox.');
+          setMessage('No session returned. Your email may need confirmation. Check your inbox, then try again.');
           setLoading(false);
           return;
         }
+        // Session confirmed — navigate
         router.push('/');
       }
     } catch (err) {
@@ -154,7 +155,7 @@ export function AuthPanel() {
           {!isSupabaseReady ? 'Unavailable' : loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create account'}
         </button>
       </form>
-      {message && !signupToken && <p className="mt-3 text-sm text-body">{message}</p>}
+      {message && <p className={`mt-3 text-sm font-medium ${message.startsWith('Login error') || message.startsWith('No session') ? 'text-rose-300' : 'text-body'}`}>{message}</p>}
     </div>
   );
 }
