@@ -38,7 +38,7 @@ export function MixamoCharacterStage({
   const accent = getAvatarAccent(avatarId);
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 [&_canvas]:!h-full [&_canvas]:!w-full ${heightClass[height]}`}>
+    <div className={`relative overflow-hidden rounded-2xl border border-border-subtle bg-background [&_canvas]:!h-full [&_canvas]:!w-full ${heightClass[height]}`}>
       <Canvas
         camera={{ position: [0, 1.35, 8], fov: 32 }}
         dpr={[1, 1.75]}

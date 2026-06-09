@@ -56,20 +56,20 @@ export function AuthPanel() {
   }
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+    <div className="rounded-xl border border-border-subtle bg-surface p-4">
       {!isSupabaseReady && (
         <p className="mb-4 rounded-lg border border-amber-900/60 bg-amber-950/50 px-3 py-2 text-sm text-amber-200">
           Supabase env vars are missing, so auth is disabled for now.
         </p>
       )}
       <div className="mb-4 flex gap-2">
-        <button className={`rounded px-3 py-1 text-sm ${mode === 'login' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800'}`} onClick={() => setMode('login')} type="button">Login</button>
-        <button className={`rounded px-3 py-1 text-sm ${mode === 'signup' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800'}`} onClick={() => setMode('signup')} type="button">Sign up</button>
+        <button className={`rounded px-3 py-1 text-sm ${mode === 'login' ? 'bg-cyan-500 text-slate-950' : 'bg-surface-raised'}`} onClick={() => setMode('login')} type="button">Login</button>
+        <button className={`rounded px-3 py-1 text-sm ${mode === 'signup' ? 'bg-cyan-500 text-slate-950' : 'bg-surface-raised'}`} onClick={() => setMode('signup')} type="button">Sign up</button>
       </div>
       <form className="space-y-3" onSubmit={handleSubmit}>
         {mode === 'signup' && (
           <input
-            className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
+            className="w-full rounded border border-border-default bg-background px-3 py-2"
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -77,7 +77,7 @@ export function AuthPanel() {
           />
         )}
         <input
-          className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
+          className="w-full rounded border border-border-default bg-background px-3 py-2"
           placeholder="Email"
           type="email"
           value={email}
@@ -85,7 +85,7 @@ export function AuthPanel() {
           required
         />
         <input
-          className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-2"
+          className="w-full rounded border border-border-default bg-background px-3 py-2"
           placeholder="Password"
           type="password"
           value={password}
@@ -96,7 +96,7 @@ export function AuthPanel() {
           {!isSupabaseReady ? 'Unavailable' : loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create account'}
         </button>
       </form>
-      {message && <p className="mt-3 text-sm text-slate-300">{message}</p>}
+      {message && <p className="mt-3 text-sm text-body">{message}</p>}
     </div>
   );
 }

@@ -73,10 +73,10 @@ export function AvatarComparisonLab() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-surface-overlay p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Avatar comparison</p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-50">Pick the direction by looking at motion, not promises.</h2>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">Pick the direction by looking at motion, not promises.</h2>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex">
           {motionOptions.map((option) => (
@@ -86,7 +86,7 @@ export function AvatarComparisonLab() {
               className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                 motion === option.id
                   ? 'border-cyan-300 bg-cyan-300 text-slate-950'
-                  : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-cyan-400'
+                  : 'border-border-default bg-background text-heading hover:border-cyan-400'
               }`}
             >
               {option.label}
@@ -95,11 +95,11 @@ export function AvatarComparisonLab() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+      <section className="rounded-2xl border border-border-subtle bg-surface-overlay p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Ready Player Me kit</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-50">{selectedKit.name} footballer preview</h2>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">{selectedKit.name} footballer preview</h2>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:flex lg:flex-wrap lg:justify-end">
             {countryKits.map((kit) => (
@@ -109,7 +109,7 @@ export function AvatarComparisonLab() {
                 className={`flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                   kit.id === kitId
                     ? 'border-cyan-300 bg-cyan-300 text-slate-950'
-                    : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-cyan-400'
+                    : 'border-border-default bg-background text-heading hover:border-cyan-400'
                 }`}
               >
                 <span className="flex h-5 w-7 overflow-hidden rounded-sm border border-white/20">
@@ -135,9 +135,9 @@ export function AvatarComparisonLab() {
           <RpmStage motion={motion} kit={selectedKit} />
         </CandidateCard>
 
-        <aside className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <aside className="rounded-2xl border border-border-subtle bg-surface p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Country kit system</p>
-          <h3 className="mt-2 text-2xl font-semibold text-slate-50">{selectedKit.name}</h3>
+          <h3 className="mt-2 text-2xl font-semibold text-white">{selectedKit.name}</h3>
           <div className="mt-5 grid grid-cols-5 gap-2">
             <KitSwatch label="Shirt" color={selectedKit.primary} />
             <KitSwatch label="Trim" color={selectedKit.secondary} />
@@ -149,7 +149,7 @@ export function AvatarComparisonLab() {
             <KitSwatch label="Boots" color={selectedKit.boot} />
             <KitSwatch label="Sole" color={selectedKit.sole} />
           </div>
-          <div className="mt-5 space-y-3 text-sm leading-6 text-slate-300">
+          <div className="mt-5 space-y-3 text-sm leading-6 text-body">
             <p>Use Ready Player Me as the avatar base, then bind a procedural football kit to the same skeleton.</p>
             <p>The shirt, shorts, socks, and studded boots are real skinned meshes tied to the Spine, Hips, Leg, and Foot bones, so they deform with the body during any animation.</p>
             <p>Next step after approval: replace the main `/avatar` character grid with this RPM footballer path.</p>
@@ -159,9 +159,9 @@ export function AvatarComparisonLab() {
 
       <section className="grid gap-4 lg:grid-cols-3">
         {candidateSummaries.map((candidate) => (
-          <article key={candidate.name} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <article key={candidate.name} className="rounded-2xl border border-border-subtle bg-surface p-5">
             <p className="text-sm font-semibold text-cyan-300">{candidate.name}</p>
-            <h3 className="mt-2 text-xl font-semibold text-slate-50">{candidate.verdict}</h3>
+            <h3 className="mt-2 text-xl font-semibold text-white">{candidate.verdict}</h3>
             <dl className="mt-4 space-y-3 text-sm leading-6">
               <SummaryItem label="License" value={candidate.license} />
               <SummaryItem label="Speed" value={candidate.speed} />
@@ -173,7 +173,7 @@ export function AvatarComparisonLab() {
 
       <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-200">Recommendation</p>
-        <p className="mt-2 max-w-4xl text-lg leading-8 text-slate-100">
+        <p className="mt-2 max-w-4xl text-lg leading-8 text-heading">
           If the Ready Player Me preview feels good, use it as the main avatar system and dress it like a footballer.
           Keep Mixamo only as a backup. If you want zero license ambiguity and instant loading, Quaternius is the fallback,
           but it will make the app feel more stylized than premium football.
@@ -199,22 +199,22 @@ function CandidateCard({
   children: ReactNode;
 }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-slate-950/30">
+    <article className="overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-xl shadow-slate-950/30">
       {children}
       <div className="space-y-4 p-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">{badge}</p>
-          <h3 className="mt-1 text-xl font-semibold text-slate-50">{title}</h3>
+          <h3 className="mt-1 text-xl font-semibold text-white">{title}</h3>
           <p className="mt-1 text-sm font-semibold text-emerald-300">{verdict}</p>
         </div>
         <div className="grid gap-2">
           {notes.map((note) => (
-            <p key={note} className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-slate-300">
+            <p key={note} className="rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-body">
               {note}
             </p>
           ))}
         </div>
-        <p className="text-xs leading-5 text-slate-500">{source}</p>
+        <p className="text-xs leading-5 text-faint">{source}</p>
       </div>
     </article>
   );
@@ -313,9 +313,9 @@ function anchorRpmHipsToStage(clip: { tracks: Array<{ name: string; values: { le
 
 function StageShell({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="relative h-[28rem] overflow-hidden bg-slate-950 [&_canvas]:!h-full [&_canvas]:!w-full">
+    <div className="relative h-[28rem] overflow-hidden bg-background [&_canvas]:!h-full [&_canvas]:!w-full">
       {children}
-      <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-200 backdrop-blur">
+      <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-white/10 bg-background/70 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-heading backdrop-blur">
         {label}
       </div>
     </div>
@@ -391,8 +391,8 @@ function FootballOrbit({ motion, accent }: { motion: MotionId; accent: string })
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="font-semibold text-slate-200">{label}</dt>
-      <dd className="mt-1 text-slate-400">{value}</dd>
+      <dt className="font-semibold text-heading">{label}</dt>
+      <dd className="mt-1 text-muted">{value}</dd>
     </div>
   );
 }
@@ -406,7 +406,7 @@ function KitSwatch({ label, color }: { label: string; color: string }) {
   return (
     <div>
       <div className="h-10 rounded-lg border border-white/10" style={{ backgroundColor: color }} />
-      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">{label}</p>
     </div>
   );
 }

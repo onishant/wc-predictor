@@ -10,7 +10,7 @@ const colors = {
 
 export function FormStrip({ form }: Props) {
   if (form.length === 0) {
-    return <span className="text-xs text-slate-500">No finished World Cup matches yet</span>;
+    return <span className="text-xs text-faint">No finished World Cup matches yet</span>;
   }
 
   return (

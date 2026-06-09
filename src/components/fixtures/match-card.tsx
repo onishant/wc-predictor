@@ -32,18 +32,18 @@ function getMatchState(
 
 const stateStyles: Record<MatchState, { card: string; badge: string; label: string }> = {
   unpredicted: {
-    card: 'border-cyan-500/30 bg-gradient-to-br from-slate-900/80 to-cyan-950/20 hover:border-cyan-400/50 hover:shadow-cyan-500/8',
+    card: 'border-cyan-500/30 bg-gradient-to-br from-surface/80 to-accent-muted hover:border-cyan-400/50 hover:shadow-cyan-500/8',
     badge: 'bg-cyan-400 text-slate-950',
     label: 'Tap to predict',
   },
   predicted: {
-    card: 'border-emerald-500/20 bg-slate-900/60 hover:border-emerald-400/40',
+    card: 'border-emerald-500/20 bg-surface/60 hover:border-emerald-400/40',
     badge: 'bg-emerald-500/20 text-emerald-300',
     label: 'Predicted',
   },
   locked: {
-    card: 'border-slate-800/40 bg-slate-900/30 opacity-60',
-    badge: 'bg-slate-800 text-slate-500',
+    card: 'border-border-subtle/40 bg-surface/30 opacity-60',
+    badge: 'bg-surface-raised text-faint',
     label: 'Locked',
   },
 };
@@ -91,7 +91,7 @@ export function MatchCard({
       }`}
     >
       {/* Header: stage + kickoff */}
-      <div className="mb-3 flex items-center justify-between text-xs text-slate-400">
+      <div className="mb-3 flex items-center justify-between text-xs text-muted">
         <span className="uppercase tracking-[0.14em]">
           {stage ?? 'Stage TBD'}{group ? ` · ${group}` : ''}
         </span>
@@ -104,21 +104,21 @@ export function MatchCard({
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="sm" />
-          <span className="truncate text-sm font-medium text-slate-100">{homeTeam}</span>
+          <span className="truncate text-sm font-medium text-heading">{homeTeam}</span>
         </div>
 
         <div className="flex flex-col items-center px-2">
           {state === 'predicted' && predictedHomeScore != null && predictedAwayScore != null ? (
-            <span className="text-lg font-bold tabular-nums text-slate-100">
+            <span className="text-lg font-bold tabular-nums text-heading">
               {predictedHomeScore} – {predictedAwayScore}
             </span>
           ) : (
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">vs</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-faint">vs</span>
           )}
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-          <span className="truncate text-sm font-medium text-slate-100">{awayTeam}</span>
+          <span className="truncate text-sm font-medium text-heading">{awayTeam}</span>
           <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="sm" />
         </div>
       </div>
@@ -137,7 +137,7 @@ export function MatchCard({
         </span>
 
         {state !== 'locked' && (
-          <span className="text-xs text-slate-500 transition group-hover:text-slate-300">
+          <span className="text-xs text-faint transition group-hover:text-body">
             {state === 'predicted' ? 'Edit' : 'Predict'} →
           </span>
         )}

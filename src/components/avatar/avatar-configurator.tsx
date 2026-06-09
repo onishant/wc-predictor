@@ -188,7 +188,7 @@ export function AvatarConfigurator() {
           height="lg"
           label={`${selectedAvatar.name} · ${tier}`}
         />
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+        <div className="rounded-2xl border border-border-subtle bg-surface p-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <Stat label="Total XP" value={totalXp} />
             <Stat label="Available XP" value={availableXp} />
@@ -196,7 +196,7 @@ export function AvatarConfigurator() {
             <Stat label="Tier" value={tier} />
           </div>
           {nextUnlockCost != null && (
-            <p className="mt-3 text-sm text-slate-400">Next unlock starts at {nextUnlockCost} XP.</p>
+            <p className="mt-3 text-sm text-muted">Next unlock starts at {nextUnlockCost} XP.</p>
           )}
           {message && <p className="mt-3 text-sm text-cyan-300">{message}</p>}
         </div>
@@ -212,11 +212,11 @@ export function AvatarConfigurator() {
                 className={`rounded-2xl border p-4 text-left transition ${
                   profile.selectedAvatarId === avatar.id
                     ? 'border-cyan-400 bg-cyan-500/10'
-                    : 'border-slate-800 bg-slate-900 hover:border-slate-600'
+                    : 'border-border-subtle bg-surface hover:border-border-strong'
                 }`}
               >
                 <p className="text-lg font-semibold" style={{ color: avatar.accent }}>{avatar.name}</p>
-                <p className="mt-2 text-sm leading-5 text-slate-400">{avatar.description}</p>
+                <p className="mt-2 text-sm leading-5 text-muted">{avatar.description}</p>
               </button>
             ))}
           </div>
@@ -309,13 +309,13 @@ function UnlockCard({
   onEquip: () => void;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+    <article className="rounded-2xl border border-border-subtle bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold">{title}</h3>
-          <p className="mt-1 text-sm leading-5 text-slate-400">{description}</p>
+          <p className="mt-1 text-sm leading-5 text-muted">{description}</p>
         </div>
-        <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-cyan-300">{cost} XP</span>
+        <span className="rounded-full bg-background px-3 py-1 text-xs font-semibold text-cyan-300">{cost} XP</span>
       </div>
       <button
         onClick={unlocked ? onEquip : onUnlock}
@@ -330,16 +330,16 @@ function UnlockCard({
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl bg-slate-950 p-3 ring-1 ring-slate-800">
-      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-slate-100">{value}</p>
+    <div className="rounded-xl bg-background p-3 ring-1 ring-border-subtle">
+      <p className="text-xs uppercase tracking-[0.16em] text-faint">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-heading">{value}</p>
     </div>
   );
 }
 
 function PanelMessage({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-300">
+    <div className="rounded-2xl border border-border-subtle bg-surface p-5 text-sm text-body">
       {message}
     </div>
   );

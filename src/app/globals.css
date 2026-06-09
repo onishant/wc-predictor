@@ -1,37 +1,94 @@
 @import "tailwindcss";
 
+/* ── Semantic colour tokens ─────────────────────────────────────── */
 :root {
-  --background: #020617;
-  --foreground: #e2e8f0;
+  /* Dark is default */
+  --bg-page: #020617;
+  --bg-surface: #0f172a;
+  --bg-surface-raised: #1e293b;
+  --bg-surface-overlay: rgba(15, 23, 42, 0.8);
+  --border-subtle: #1e293b;
+  --border-default: #334155;
+  --border-strong: #475569;
+  --text-heading: #f1f5f9;
+  --text-body: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --accent: #22d3ee;
+  --accent-hover: #67e8f9;
+  --accent-muted: rgba(34, 211, 238, 0.15);
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --success: #34d399;
+  --gradient-start: #020617;
+  --gradient-end: #0f172a;
+  --glow-cyan: rgba(34, 211, 238, 0.16);
+  --glow-indigo: rgba(99, 102, 241, 0.12);
 }
 
+[data-theme="light"] {
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #f1f5f9;
+  --bg-surface-overlay: rgba(255, 255, 255, 0.85);
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  --text-heading: #0f172a;
+  --text-body: #334155;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --accent: #0891b2;
+  --hover: #0e7490;
+  --accent-muted: rgba(8, 145, 178, 0.1);
+  --danger: #dc2626;
+  --warning: #d97706;
+  --success: #059669;
+  --gradient-start: #f8fafc;
+  --gradient-end: #e2e8f0;
+  --glow-cyan: rgba(8, 145, 178, 0.08);
+  --glow-indigo: rgba(99, 102, 241, 0.06);
+}
+
+/* ── Tailwind theme extension ───────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg-page);
+  --color-foreground: var(--text-body);
+  --color-surface: var(--bg-surface);
+  --color-surface-raised: var(--bg-surface-raised);
+  --color-surface-overlay: var(--bg-surface-overlay);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-heading: var(--text-heading);
+  --color-body: var(--text-body);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-muted: var(--accent-muted);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #e2e8f0;
-  }
-}
-
+/* ── Base ───────────────────────────────────────────────────────── */
 html {
   min-height: 100%;
   background:
-    radial-gradient(circle at top, rgba(34, 211, 238, 0.16), transparent 34%),
-    radial-gradient(circle at right, rgba(99, 102, 241, 0.12), transparent 24%),
-    linear-gradient(180deg, #020617 0%, #0f172a 100%);
+    radial-gradient(circle at top, var(--glow-cyan), transparent 34%),
+    radial-gradient(circle at right, var(--glow-indigo), transparent 24%),
+    linear-gradient(180deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
 }
 
 body {
   min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-page);
+  color: var(--text-body);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 * {
@@ -39,6 +96,11 @@ body {
 }
 
 ::selection {
-  background: rgba(34, 211, 238, 0.2);
+  background: var(--accent-muted);
   color: inherit;
+}
+
+/* ── Smooth theme transitions on surfaces ───────────────────────── */
+[data-theme] .themed-surface {
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

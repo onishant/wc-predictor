@@ -61,8 +61,8 @@ const statusColors: Record<string, string> = {
   FINISHED: 'bg-emerald-500/20 text-emerald-300',
   IN_PLAY: 'bg-amber-500/20 text-amber-300',
   PAUSED: 'bg-amber-500/20 text-amber-300',
-  TIMED: 'bg-slate-700/40 text-slate-400',
-  SCHEDULED: 'bg-slate-700/40 text-slate-400',
+  TIMED: 'bg-surface-raised/40 text-muted',
+  SCHEDULED: 'bg-surface-raised/40 text-muted',
   POSTPONED: 'bg-red-500/20 text-red-300',
   CANCELLED: 'bg-red-500/20 text-red-300',
 };
@@ -83,12 +83,12 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
   return (
     <>
       {/* Progress bar */}
-      <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="mb-6 rounded-2xl border border-border-subtle bg-surface/60 p-4">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-300">Your predictions</span>
+          <span className="text-body">Your predictions</span>
           <span className="font-semibold text-cyan-300">{totalPredicted} / {totalMatches}</span>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-raised">
           <div
             className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-300 transition-all duration-500"
             style={{ width: `${totalMatches > 0 ? (totalPredicted / totalMatches) * 100 : 0}%` }}
@@ -99,7 +99,7 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
       {/* Timeline */}
       <div className="relative">
         {/* Vertical timeline line */}
-        <div className="absolute left-[19px] top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-slate-700/40 to-transparent" />
+        <div className="absolute left-[19px] top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-border-default/40 to-transparent" />
 
         {groups.map((group, groupIndex) => (
           <div key={group.dateKey} className="relative pb-8 last:pb-0">
@@ -110,7 +110,7 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                 <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-bold ${
                   groupIndex === 0
                     ? 'border-cyan-400 bg-cyan-400/20 text-cyan-300'
-                    : 'border-slate-700 bg-slate-900 text-slate-400'
+                    : 'border-border-default bg-surface text-muted'
                 }`}>
                   {group.dayLabel}
                 </div>
@@ -120,8 +120,8 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
               <div className="min-w-0 flex-1 pt-1">
                 {/* Date header */}
                 <div className="mb-3 flex items-baseline gap-3">
-                  <h3 className="text-lg font-semibold text-slate-100">{group.dateLabel}</h3>
-                  <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">{group.matchday}</span>
+                  <h3 className="text-lg font-semibold text-heading">{group.dateLabel}</h3>
+                  <span className="text-xs font-medium uppercase tracking-[0.14em] text-faint">{group.matchday}</span>
                 </div>
 
                 {/* Match cards for this date */}
@@ -144,16 +144,16 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                         disabled={isLocked}
                         className={`group w-full rounded-xl border p-3 text-left transition-all duration-200 ${
                           isLocked
-                            ? 'cursor-not-allowed border-slate-800/40 bg-slate-900/20 opacity-60'
+                            ? 'cursor-not-allowed border-border-subtle/40 bg-surface/20 opacity-60'
                             : hasPrediction
-                            ? 'border-emerald-500/20 bg-slate-900/50 hover:border-emerald-400/40'
-                            : 'border-slate-800/60 bg-slate-900/40 hover:border-cyan-400/40 hover:bg-slate-900/70'
+                            ? 'border-emerald-500/20 bg-surface/50 hover:border-emerald-400/40'
+                            : 'border-border-subtle/60 bg-surface/40 hover:border-cyan-400/40 hover:bg-surface/70'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           {/* Time */}
                           <div className="flex w-12 flex-shrink-0 flex-col items-center">
-                            <span className="text-sm font-semibold tabular-nums text-slate-200">{time}</span>
+                            <span className="text-sm font-semibold tabular-nums text-heading">{time}</span>
                             <span className={`mt-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${statusColor}`}>
                               {match.status === 'TIMED' || match.status === 'SCHEDULED' ? 'Upcoming' : match.status}
                             </span>
@@ -163,21 +163,21 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                           <div className="flex min-w-0 flex-1 items-center gap-2">
                             <div className="flex min-w-0 flex-1 items-center gap-2">
                               <TeamBadge team={match.homeTeamVisual} size="sm" />
-                              <span className="truncate text-sm font-medium text-slate-100">{match.homeTeam}</span>
+                              <span className="truncate text-sm font-medium text-heading">{match.homeTeam}</span>
                             </div>
 
                             <div className="flex flex-col items-center px-2">
                               {hasPrediction ? (
-                                <span className="text-base font-bold tabular-nums text-slate-100">
+                                <span className="text-base font-bold tabular-nums text-heading">
                                   {pred!.pred_home_score} – {pred!.pred_away_score}
                                 </span>
                               ) : (
-                                <span className="text-xs font-semibold text-slate-500">vs</span>
+                                <span className="text-xs font-semibold text-faint">vs</span>
                               )}
                             </div>
 
                             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-                              <span className="truncate text-sm font-medium text-slate-100">{match.awayTeam}</span>
+                              <span className="truncate text-sm font-medium text-heading">{match.awayTeam}</span>
                               <TeamBadge team={match.awayTeamVisual} size="sm" />
                             </div>
                           </div>
@@ -192,15 +192,15 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                                 Done
                               </span>
                             ) : isLocked ? (
-                              <span className="text-[11px] text-slate-500">Locked</span>
+                              <span className="text-[11px] text-faint">Locked</span>
                             ) : (
-                              <span className="text-[11px] text-slate-400 transition group-hover:text-cyan-300">Predict →</span>
+                              <span className="text-[11px] text-muted transition group-hover:text-cyan-300">Predict →</span>
                             )}
                           </div>
                         </div>
 
                         {/* Stage info */}
-                        <div className="mt-1.5 pl-14 text-[11px] text-slate-500">
+                        <div className="mt-1.5 pl-14 text-[11px] text-faint">
                           {match.stage ?? 'Stage TBD'}{match.group ? ` · ${match.group}` : ''}
                         </div>
                       </button>

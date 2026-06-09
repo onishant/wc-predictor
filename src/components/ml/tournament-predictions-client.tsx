@@ -10,8 +10,8 @@ type Props = {
 type SortKey = 'winner' | 'position' | 'name';
 
 const stageColors: Record<string, string> = {
-  group_exit: 'text-slate-500',
-  round_of_32: 'text-slate-400',
+  group_exit: 'text-faint',
+  round_of_32: 'text-muted',
   round_of_16: 'text-cyan-300',
   quarter_final: 'text-blue-300',
   semi_final: 'text-purple-300',
@@ -78,7 +78,7 @@ export function TournamentPredictionsClient({ dashboard }: Props) {
       </div>
 
       {/* Winner probabilities chart */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+      <div className="rounded-2xl border border-border-subtle bg-surface/60 p-5">
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-purple-400">
           🏆 Tournament Winner Probabilities
         </p>
@@ -91,7 +91,7 @@ export function TournamentPredictionsClient({ dashboard }: Props) {
 
       {/* Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex rounded-xl border border-slate-800 bg-slate-900/60 p-1">
+        <div className="flex rounded-xl border border-border-subtle bg-surface/60 p-1">
           {([
             { key: 'winner' as SortKey, label: 'By Winner %' },
             { key: 'position' as SortKey, label: 'By Expected Position' },
@@ -104,7 +104,7 @@ export function TournamentPredictionsClient({ dashboard }: Props) {
               className={`rounded-lg px-4 py-2 text-xs font-semibold transition ${
                 sortBy === option.key
                   ? 'bg-purple-500 text-slate-950'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-muted hover:text-heading'
               }`}
             >
               {option.label}
@@ -116,14 +116,14 @@ export function TournamentPredictionsClient({ dashboard }: Props) {
           placeholder="Search teams..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2 text-sm text-slate-200 placeholder-slate-500 outline-none transition focus:border-purple-400"
+          className="rounded-xl border border-border-subtle bg-surface/60 px-4 py-2 text-sm text-heading placeholder-faint outline-none transition focus:border-purple-400"
         />
       </div>
 
       {/* Full table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-800">
+      <div className="overflow-hidden rounded-2xl border border-border-subtle">
         <table className="w-full text-sm">
-          <thead className="bg-slate-900 text-slate-300">
+          <thead className="bg-surface text-body">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium">#</th>
               <th className="px-4 py-3 text-left text-xs font-medium">Team</th>
@@ -137,25 +137,25 @@ export function TournamentPredictionsClient({ dashboard }: Props) {
             {sortedTeams.map((team, index) => (
               <tr
                 key={team.team}
-                className={`border-t border-slate-800/50 transition hover:bg-slate-900/40 ${
+                className={`border-t border-border-subtle/50 transition hover:bg-surface/40 ${
                   index < 3 ? 'bg-purple-500/5' : ''
                 }`}
               >
-                <td className="px-4 py-2.5 text-slate-500">{index + 1}</td>
-                <td className="px-4 py-2.5 font-medium text-slate-100">{team.team}</td>
+                <td className="px-4 py-2.5 text-faint">{index + 1}</td>
+                <td className="px-4 py-2.5 font-medium text-heading">{team.team}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">
-                  <span className={team.winner_probability > 0.05 ? 'font-bold text-purple-300' : 'text-slate-300'}>
+                  <span className={team.winner_probability > 0.05 ? 'font-bold text-purple-300' : 'text-body'}>
                     {(team.winner_probability * 100).toFixed(1)}%
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-slate-300">
+                <td className="px-4 py-2.5 text-right tabular-nums text-body">
                   {team.expected_position.toFixed(1)}
                 </td>
-                <td className={`px-4 py-2.5 ${stageColors[team.most_likely_stage] ?? 'text-slate-400'}`}>
+                <td className={`px-4 py-2.5 ${stageColors[team.most_likely_stage] ?? 'text-muted'}`}>
                   {stageLabels[team.most_likely_stage] ?? team.most_likely_stage}
                 </td>
                 <td className="px-4 py-2.5">
-                  <div className="h-2 w-full max-w-[120px] overflow-hidden rounded-full bg-slate-800">
+                  <div className="h-2 w-full max-w-[120px] overflow-hidden rounded-full bg-surface-raised">
                     <div
                       className="h-full rounded-full bg-purple-400 transition-all"
                       style={{ width: `${Math.min(100, team.winner_probability * 100 * 5)}%` }}
@@ -169,18 +169,18 @@ export function TournamentPredictionsClient({ dashboard }: Props) {
       </div>
 
       {/* Model details */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Model Details</p>
+      <div className="rounded-2xl border border-border-subtle bg-surface/60 p-5">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted">Model Details</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-slate-950/50 p-3">
-            <p className="text-xs text-slate-500">Type</p>
-            <p className="mt-1 text-sm text-slate-200">{dashboard.model.type as string}</p>
+          <div className="rounded-xl bg-background/50 p-3">
+            <p className="text-xs text-faint">Type</p>
+            <p className="mt-1 text-sm text-heading">{dashboard.model.type as string}</p>
           </div>
           {(dashboard.model.parameters && typeof dashboard.model.parameters === 'object' ?
             Object.entries(dashboard.model.parameters as Record<string, unknown>).map(([key, value]) => (
-              <div key={key} className="rounded-xl bg-slate-950/50 p-3">
-                <p className="text-xs text-slate-500">{key.replace(/_/g, ' ')}</p>
-                <p className="mt-1 text-sm font-medium text-slate-200">{String(value)}</p>
+              <div key={key} className="rounded-xl bg-background/50 p-3">
+                <p className="text-xs text-faint">{key.replace(/_/g, ' ')}</p>
+                <p className="mt-1 text-sm font-medium text-heading">{String(value)}</p>
               </div>
             )) : null
           )}
@@ -192,9 +192,9 @@ export function TournamentPredictionsClient({ dashboard }: Props) {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-      <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-100">{value}</p>
+    <div className="rounded-2xl border border-border-subtle bg-surface/60 p-4">
+      <p className="text-[11px] uppercase tracking-[0.14em] text-faint">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-heading">{value}</p>
     </div>
   );
 }
@@ -205,10 +205,10 @@ function WinnerBar({ team, probability, rank }: { team: string; probability: num
 
   return (
     <div className="flex items-center gap-3">
-      <span className="w-5 text-right text-xs text-slate-500">{rank}</span>
-      <span className="w-28 truncate text-sm font-medium text-slate-200">{team}</span>
+      <span className="w-5 text-right text-xs text-faint">{rank}</span>
+      <span className="w-28 truncate text-sm font-medium text-heading">{team}</span>
       <div className="flex-1">
-        <div className="h-5 overflow-hidden rounded-lg bg-slate-800">
+        <div className="h-5 overflow-hidden rounded-lg bg-surface-raised">
           <div
             className="flex h-full items-center rounded-lg bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-500"
             style={{ width: `${barWidth}%` }}
@@ -220,7 +220,7 @@ function WinnerBar({ team, probability, rank }: { team: string; probability: num
         </div>
       </div>
       {pct <= 3 && (
-        <span className="w-10 text-right text-xs text-slate-400">{pct}%</span>
+        <span className="w-10 text-right text-xs text-muted">{pct}%</span>
       )}
     </div>
   );

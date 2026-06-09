@@ -51,10 +51,10 @@ export function MLPredictionStats({ homeTeam, awayTeam, group, homeTeamStats, aw
 
   if (data.loading) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="rounded-xl border border-border-subtle bg-surface/60 p-4">
         <div className="flex items-center gap-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
-          <span className="text-xs text-slate-400">Loading ML predictions...</span>
+          <span className="text-xs text-muted">Loading ML predictions...</span>
         </div>
       </div>
     );
@@ -104,30 +104,30 @@ function MatchPredictionCard({
 
   return (
     <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-3">
-      <p className="mb-2 text-xs text-slate-400">Expected Goals & Outcome</p>
+      <p className="mb-2 text-xs text-muted">Expected Goals & Outcome</p>
 
       {/* xG display */}
       <div className="mb-3 flex items-center justify-center gap-6">
         <div className="text-center">
-          <span className="text-2xl font-bold text-slate-100">{match.expected_home_goals.toFixed(1)}</span>
-          <p className="text-[11px] text-slate-400">{homeTeam} xG</p>
+          <span className="text-2xl font-bold text-heading">{match.expected_home_goals.toFixed(1)}</span>
+          <p className="text-[11px] text-muted">{homeTeam} xG</p>
         </div>
-        <span className="text-lg text-slate-500">vs</span>
+        <span className="text-lg text-faint">vs</span>
         <div className="text-center">
-          <span className="text-2xl font-bold text-slate-100">{match.expected_away_goals.toFixed(1)}</span>
-          <p className="text-[11px] text-slate-400">{awayTeam} xG</p>
+          <span className="text-2xl font-bold text-heading">{match.expected_away_goals.toFixed(1)}</span>
+          <p className="text-[11px] text-muted">{awayTeam} xG</p>
         </div>
       </div>
 
       {/* Win probability bar */}
-      <div className="mb-1.5 flex h-3 overflow-hidden rounded-full bg-slate-800">
+      <div className="mb-1.5 flex h-3 overflow-hidden rounded-full bg-surface-raised">
         <div
           className="h-full bg-cyan-400 transition-all"
           style={{ width: `${homeWin}%` }}
           title={`${homeTeam} ${homeWin}%`}
         />
         <div
-          className="h-full bg-slate-500 transition-all"
+          className="h-full bg-faint transition-all"
           style={{ width: `${draw}%` }}
           title={`Draw ${draw}%`}
         />
@@ -137,7 +137,7 @@ function MatchPredictionCard({
           title={`${awayTeam} ${awayWin}%`}
         />
       </div>
-      <div className="flex justify-between text-[11px] text-slate-400">
+      <div className="flex justify-between text-[11px] text-muted">
         <span>{homeTeam} {homeWin}%</span>
         <span>Draw {draw}%</span>
         <span>{awayTeam} {awayWin}%</span>
@@ -148,9 +148,9 @@ function MatchPredictionCard({
 
 function TeamWCCard({ team, stats }: { team: string; stats: TeamWorldCupStats }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-      <p className="mb-1 text-xs font-semibold text-slate-200">{team}</p>
-      <p className="mb-2 text-[11px] text-slate-500">Current World Cup</p>
+    <div className="rounded-xl border border-border-subtle bg-surface/60 p-3">
+      <p className="mb-1 text-xs font-semibold text-heading">{team}</p>
+      <p className="mb-2 text-[11px] text-faint">Current World Cup</p>
 
       {/* Record */}
       <div className="mb-2 flex gap-2 text-xs">
@@ -175,21 +175,21 @@ function TeamWCCard({ team, stats }: { team: string; stats: TeamWorldCupStats })
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-        <div className="rounded bg-slate-950/50 px-2 py-1">
-          <span className="text-slate-500">P</span>{' '}
-          <span className="font-semibold text-slate-200">{stats.played}</span>
+        <div className="rounded bg-background/50 px-2 py-1">
+          <span className="text-faint">P</span>{' '}
+          <span className="font-semibold text-heading">{stats.played}</span>
         </div>
-        <div className="rounded bg-slate-950/50 px-2 py-1">
-          <span className="text-slate-500">GF</span>{' '}
-          <span className="font-semibold text-slate-200">{stats.goalsFor}</span>
+        <div className="rounded bg-background/50 px-2 py-1">
+          <span className="text-faint">GF</span>{' '}
+          <span className="font-semibold text-heading">{stats.goalsFor}</span>
         </div>
-        <div className="rounded bg-slate-950/50 px-2 py-1">
-          <span className="text-slate-500">GA</span>{' '}
-          <span className="font-semibold text-slate-200">{stats.goalsAgainst}</span>
+        <div className="rounded bg-background/50 px-2 py-1">
+          <span className="text-faint">GA</span>{' '}
+          <span className="font-semibold text-heading">{stats.goalsAgainst}</span>
         </div>
-        <div className="col-span-2 rounded bg-slate-950/50 px-2 py-1">
-          <span className="text-slate-500">GD</span>{' '}
-          <span className={`font-semibold ${stats.goalDifference > 0 ? 'text-emerald-300' : stats.goalDifference < 0 ? 'text-red-300' : 'text-slate-200'}`}>
+        <div className="col-span-2 rounded bg-background/50 px-2 py-1">
+          <span className="text-faint">GD</span>{' '}
+          <span className={`font-semibold ${stats.goalDifference > 0 ? 'text-emerald-300' : stats.goalDifference < 0 ? 'text-red-300' : 'text-heading'}`}>
             {stats.goalDifference > 0 ? '+' : ''}{stats.goalDifference}
           </span>
         </div>
@@ -218,11 +218,11 @@ function GroupStandings({
   if (groupTeams.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">{group} Standings</p>
+    <div className="rounded-xl border border-border-subtle bg-surface/60 p-3">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">{group} Standings</p>
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-[11px] text-slate-500">
+          <tr className="text-[11px] text-faint">
             <th className="pb-1.5 text-left font-medium">Team</th>
             <th className="pb-1.5 text-right font-medium">P</th>
             <th className="pb-1.5 text-right font-medium">W</th>
@@ -238,21 +238,21 @@ function GroupStandings({
             return (
               <tr
                 key={team.teamId}
-                className={`border-t border-slate-800/50 ${isMatch ? 'bg-cyan-500/8' : ''}`}
+                className={`border-t border-border-subtle/50 ${isMatch ? 'bg-cyan-500/8' : ''}`}
               >
-                <td className={`py-1.5 text-left font-medium ${isMatch ? 'text-cyan-300' : 'text-slate-200'}`}>
+                <td className={`py-1.5 text-left font-medium ${isMatch ? 'text-cyan-300' : 'text-heading'}`}>
                   {team.teamName}
                 </td>
-                <td className="py-1.5 text-right tabular-nums text-slate-300">{team.played}</td>
-                <td className="py-1.5 text-right tabular-nums text-slate-300">{team.won}</td>
-                <td className="py-1.5 text-right tabular-nums text-slate-300">{team.drawn}</td>
-                <td className="py-1.5 text-right tabular-nums text-slate-300">{team.lost}</td>
+                <td className="py-1.5 text-right tabular-nums text-body">{team.played}</td>
+                <td className="py-1.5 text-right tabular-nums text-body">{team.won}</td>
+                <td className="py-1.5 text-right tabular-nums text-body">{team.drawn}</td>
+                <td className="py-1.5 text-right tabular-nums text-body">{team.lost}</td>
                 <td className={`py-1.5 text-right tabular-nums ${
-                  team.goalDifference > 0 ? 'text-emerald-300' : team.goalDifference < 0 ? 'text-red-300' : 'text-slate-300'
+                  team.goalDifference > 0 ? 'text-emerald-300' : team.goalDifference < 0 ? 'text-red-300' : 'text-body'
                 }`}>
                   {team.goalDifference > 0 ? '+' : ''}{team.goalDifference}
                 </td>
-                <td className="py-1.5 text-right font-semibold tabular-nums text-slate-100">{team.points}</td>
+                <td className="py-1.5 text-right font-semibold tabular-nums text-heading">{team.points}</td>
               </tr>
             );
           })}

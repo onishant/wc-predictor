@@ -139,19 +139,19 @@ export function PredictionPanel({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* Panel */}
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-800 bg-slate-950 shadow-2xl shadow-slate-950/80">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border-subtle bg-background shadow-2xl shadow-slate-950/80">
         {/* Close button */}
-        <div className="flex items-center justify-between border-b border-slate-800/60 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-border-subtle/60 px-5 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Make prediction</p>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-default text-muted transition hover:bg-surface-raised hover:text-heading"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -162,10 +162,10 @@ export function PredictionPanel({
         <div className="flex-1 overflow-y-auto px-5 py-6">
           {/* Match info */}
           <div className="mb-6 text-center">
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted">
               {kickoffDisplay} · {timeDisplay}
             </p>
-            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">
+            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-faint">
               {isLocked ? 'Match locked' : 'Group stage'}
             </p>
           </div>
@@ -175,7 +175,7 @@ export function PredictionPanel({
             {/* Home team */}
             <div className="flex flex-1 flex-col items-center gap-2">
               <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="md" />
-              <span className="text-sm font-medium text-slate-200">{homeTeam}</span>
+              <span className="text-sm font-medium text-heading">{homeTeam}</span>
             </div>
 
             {/* Score */}
@@ -187,7 +187,7 @@ export function PredictionPanel({
                 onDecrease={() => setHomeScore((s) => adjustScore(s, -1))}
                 onIncrease={() => setHomeScore((s) => adjustScore(s, 1))}
               />
-              <span className="text-2xl font-light text-slate-500">:</span>
+              <span className="text-2xl font-light text-faint">:</span>
               <ScoreStepper
                 value={awayScore}
                 onChange={setAwayScore}
@@ -200,20 +200,20 @@ export function PredictionPanel({
             {/* Away team */}
             <div className="flex flex-1 flex-col items-center gap-2">
               <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="md" />
-              <span className="text-sm font-medium text-slate-200">{awayTeam}</span>
+              <span className="text-sm font-medium text-heading">{awayTeam}</span>
             </div>
           </div>
 
           {/* Result display (auto-derived from scores) */}
           <div className="mb-6">
-            <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
               Match result
             </p>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-center">
-              <span className="text-lg font-semibold text-slate-100">
+            <div className="rounded-2xl border border-border-subtle bg-surface/60 p-4 text-center">
+              <span className="text-lg font-semibold text-heading">
                 {result === 'home' ? homeTeam : result === 'away' ? awayTeam : 'Draw'}
               </span>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-muted">
                 {result === 'draw' ? 'Evenly matched' : `${result === 'home' ? homeTeam : awayTeam} wins`}
               </p>
             </div>
@@ -253,7 +253,7 @@ export function PredictionPanel({
         </div>
 
         {/* Sticky save button */}
-        <div className="border-t border-slate-800/60 px-5 py-4">
+        <div className="border-t border-border-subtle/60 px-5 py-4">
           <button
             type="button"
             onClick={handleSave}
@@ -262,7 +262,7 @@ export function PredictionPanel({
               saved
                 ? 'bg-emerald-500 text-slate-950'
                 : isLocked || !isSupabaseReady
-                ? 'cursor-not-allowed bg-slate-800 text-slate-500'
+                ? 'cursor-not-allowed bg-surface-raised text-faint'
                 : 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 active:bg-cyan-500'
             }`}
           >
@@ -301,7 +301,7 @@ function ScoreStepper({
         type="button"
         onClick={onIncrease}
         disabled={disabled}
-        className="flex h-7 w-10 items-center justify-center rounded-lg border border-slate-700 text-slate-400 transition hover:bg-slate-800 hover:text-slate-200 disabled:opacity-40"
+        className="flex h-7 w-10 items-center justify-center rounded-lg border border-border-default text-muted transition hover:bg-surface-raised hover:text-heading disabled:opacity-40"
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -313,13 +313,13 @@ function ScoreStepper({
         value={value}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
         disabled={disabled}
-        className="h-14 w-16 rounded-xl border border-slate-700 bg-slate-900 text-center text-3xl font-bold tabular-nums text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="h-14 w-16 rounded-xl border border-border-default bg-surface text-center text-3xl font-bold tabular-nums text-heading outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 disabled:opacity-40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
       <button
         type="button"
         onClick={onDecrease}
         disabled={disabled}
-        className="flex h-7 w-10 items-center justify-center rounded-lg border border-slate-700 text-slate-400 transition hover:bg-slate-800 hover:text-slate-200 disabled:opacity-40"
+        className="flex h-7 w-10 items-center justify-center rounded-lg border border-border-default text-muted transition hover:bg-surface-raised hover:text-heading disabled:opacity-40"
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />

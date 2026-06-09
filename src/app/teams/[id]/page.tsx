@@ -36,17 +36,17 @@ export default async function TeamPage({ params }: Props) {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 py-6 text-heading sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <AppNav />
         <Link href="/teams" className="text-sm text-cyan-300 hover:text-cyan-200">← All teams</Link>
 
-        <header className="rounded-[28px] border border-slate-800 bg-slate-900/80 p-6">
+        <header className="rounded-[28px] border border-border-subtle bg-surface-overlay p-6">
           <TeamBadge team={visual} />
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-300">
-            <span>Coach: <strong className="text-slate-100">{team.coachName ?? 'Not listed'}</strong></span>
-            <span>Squad: <strong className="text-slate-100">{team.squad.length}</strong></span>
-            <span>Average age: <strong className="text-slate-100">{averageAge}</strong></span>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-body">
+            <span>Coach: <strong className="text-heading">{team.coachName ?? 'Not listed'}</strong></span>
+            <span>Squad: <strong className="text-heading">{team.squad.length}</strong></span>
+            <span>Average age: <strong className="text-heading">{averageAge}</strong></span>
             {team.website && <a href={team.website} className="text-cyan-300 hover:text-cyan-200" target="_blank" rel="noreferrer">Official website</a>}
           </div>
         </header>
@@ -59,10 +59,10 @@ export default async function TeamPage({ params }: Props) {
           <Stat label="Goal difference" value={stats?.goalDifference ?? 0} />
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+        <section className="rounded-2xl border border-border-subtle bg-surface/70 p-5">
           <h2 className="font-semibold">Recent World Cup form</h2>
           <div className="mt-3"><FormStrip form={stats?.recentForm ?? []} /></div>
-          <p className="mt-3 text-xs text-slate-500">The current data provider does not include international friendlies, qualifiers, or player match ratings.</p>
+          <p className="mt-3 text-xs text-faint">The current data provider does not include international friendlies, qualifiers, or player match ratings.</p>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
@@ -70,12 +70,12 @@ export default async function TeamPage({ params }: Props) {
             <div className="mb-3">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">4-3-3 projection</p>
               <h2 className="mt-1 text-xl font-semibold">Predicted starting eleven</h2>
-              <p className="mt-2 text-xs leading-5 text-slate-400">Projection based on listed position and an experience/prime-age heuristic. It is not an official lineup.</p>
+              <p className="mt-2 text-xs leading-5 text-muted">Projection based on listed position and an experience/prime-age heuristic. It is not an official lineup.</p>
             </div>
             <ProjectedLineupView lineup={lineup} />
           </div>
 
-          <aside className="h-fit rounded-2xl border border-amber-800/70 bg-gradient-to-b from-amber-950/60 to-slate-900 p-5 lg:sticky lg:top-6">
+          <aside className="h-fit rounded-2xl border border-amber-800/70 bg-gradient-to-b from-amber-500/10 to-surface p-5 lg:sticky lg:top-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-400">Past World Cups</p>
             <h2 className="mt-2 text-xl font-semibold text-amber-50">{trivia.headline}</h2>
             <ul className="mt-4 space-y-4 text-sm leading-6 text-amber-100/80">
@@ -87,16 +87,16 @@ export default async function TeamPage({ params }: Props) {
         <section>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Matchday squad</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-faint">Matchday squad</p>
               <h2 className="mt-1 text-xl font-semibold">Predicted substitutes</h2>
             </div>
-            <p className="text-xs text-slate-400">{Object.entries(positions).map(([position, count]) => `${count} ${position}`).join(' · ')}</p>
+            <p className="text-xs text-muted">{Object.entries(positions).map(([position, count]) => `${count} ${position}`).join(' · ')}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {lineup.substitutes.map((player) => (
-              <div key={player.id} className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
-                <p className="font-medium text-slate-100">{player.name}</p>
-                <p className="mt-1 text-xs text-slate-400">{player.position ?? 'Position not listed'} · Age {getAge(player.dateOfBirth) ?? '—'}</p>
+              <div key={player.id} className="rounded-xl border border-border-subtle bg-surface/70 p-4">
+                <p className="font-medium text-heading">{player.name}</p>
+                <p className="mt-1 text-xs text-muted">{player.position ?? 'Position not listed'} · Age {getAge(player.dateOfBirth) ?? '—'}</p>
               </div>
             ))}
           </div>
@@ -107,7 +107,7 @@ export default async function TeamPage({ params }: Props) {
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4"><p className="text-xs uppercase tracking-wider text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold">{value}</p></div>;
+  return <div className="rounded-xl border border-border-subtle bg-surface/70 p-4"><p className="text-xs uppercase tracking-wider text-faint">{label}</p><p className="mt-2 text-2xl font-semibold">{value}</p></div>;
 }
 
 function getAge(dateOfBirth: string | null) {

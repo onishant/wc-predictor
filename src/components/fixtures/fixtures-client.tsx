@@ -64,7 +64,7 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
     <>
       {/* View toggle */}
       <div className="flex items-center justify-between">
-        <div className="flex rounded-2xl border border-slate-800 bg-slate-900/60 p-1">
+        <div className="flex rounded-2xl border border-border-subtle bg-surface/60 p-1">
           {([
             { id: 'stadium' as const, label: 'By Stadium', icon: '🏟️' },
             { id: 'date' as const, label: 'By Date', icon: '📅' },
@@ -76,7 +76,7 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
               className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                 viewMode === mode.id
                   ? 'bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20'
-                  : 'text-slate-300 hover:bg-slate-800'
+                  : 'text-body hover:bg-surface-raised'
               }`}
             >
               <span>{mode.icon}</span>
@@ -85,7 +85,7 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
           ))}
         </div>
 
-        <div className="text-sm text-slate-400">
+        <div className="text-sm text-muted">
           {matches.length} total fixtures
         </div>
       </div>
@@ -103,7 +103,7 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
 
             {/* Venue cards grid */}
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                 Host venues
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -128,27 +128,27 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
             {selectedVenue && (
               <>
                 {/* Venue header */}
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                <div className="rounded-2xl border border-border-subtle bg-surface/60 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Selected venue</p>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-50">{selectedVenue.venueName}</h2>
-                  <p className="mt-1 text-sm text-slate-300">
+                  <h2 className="mt-1 text-xl font-semibold text-white">{selectedVenue.venueName}</h2>
+                  <p className="mt-1 text-sm text-body">
                     {selectedVenue.commonName} · {selectedVenue.city}, {selectedVenue.country}
                   </p>
                   {selectedVenue.note && (
-                    <p className="mt-3 text-xs leading-5 text-slate-400">{selectedVenue.note}</p>
+                    <p className="mt-3 text-xs leading-5 text-muted">{selectedVenue.note}</p>
                   )}
-                  <div className="mt-3 flex gap-3 text-xs text-slate-400">
+                  <div className="mt-3 flex gap-3 text-xs text-muted">
                     <span>{selectedVenueMatches.length} fixture{selectedVenueMatches.length !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
 
                 {/* Match cards */}
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
                     Fixtures
                   </p>
                   {selectedVenueMatches.length === 0 ? (
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 text-center text-sm text-slate-500">
+                    <div className="rounded-2xl border border-border-subtle bg-surface/40 p-6 text-center text-sm text-faint">
                       No fixtures routed to this venue yet.
                     </div>
                   ) : (

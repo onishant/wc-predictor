@@ -9,13 +9,13 @@ export default async function MLPredictionsPage() {
   const dashboard = mlAvailable ? await getMLDashboard() : null;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 py-6 text-heading sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <AppNav />
-        <header className="rounded-[28px] border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-purple-950/20 backdrop-blur">
+        <header className="rounded-[28px] border border-border-subtle bg-surface-overlay p-6 shadow-2xl shadow-purple-950/20 backdrop-blur">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-400">Machine Learning</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Tournament Predictions</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-body">
             Elo-Poisson model running {dashboard?.simulations?.toLocaleString() ?? '...'} Monte Carlo simulations
             to predict World Cup 2026 outcomes. Model: {String(dashboard?.model?.type ?? '...')}.
           </p>

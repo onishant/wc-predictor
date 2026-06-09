@@ -71,8 +71,8 @@ function ComparisonBar({
   ];
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-      <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-300">
+    <div className="rounded-xl border border-border-subtle bg-surface/60 p-3">
+      <div className="mb-2 flex items-center justify-between text-xs font-semibold text-body">
         <span>{homeTeam}</span>
         <span>{awayTeam}</span>
       </div>
@@ -82,12 +82,12 @@ function ComparisonBar({
           const homePct = total > 0 ? (metric.home / total) * 100 : 50;
           return (
             <div key={metric.label}>
-              <div className="mb-0.5 flex items-center justify-between text-[11px] text-slate-400">
+              <div className="mb-0.5 flex items-center justify-between text-[11px] text-muted">
                 <span className="w-8 text-right tabular-nums">{metric.home}</span>
                 <span>{metric.label}</span>
                 <span className="w-8 tabular-nums">{metric.away}</span>
               </div>
-              <div className="flex h-1.5 overflow-hidden rounded-full bg-slate-800">
+              <div className="flex h-1.5 overflow-hidden rounded-full bg-surface-raised">
                 <div
                   className="h-full rounded-full bg-cyan-400 transition-all duration-500"
                   style={{ width: `${homePct}%` }}
@@ -112,40 +112,40 @@ function H2HSection({
 }) {
   if (h2h.totalMatches === 0) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Head to Head</p>
-        <p className="mt-2 text-sm text-slate-500">No previous meetings found</p>
+      <div className="rounded-xl border border-border-subtle bg-surface/60 p-4 text-center">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Head to Head</p>
+        <p className="mt-2 text-sm text-faint">No previous meetings found</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Head to Head</p>
+    <div className="rounded-xl border border-border-subtle bg-surface/60 p-3">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Head to Head</p>
       <div className="flex items-center justify-center gap-4 text-center">
         <div>
           <span className="text-2xl font-bold text-cyan-300">{h2h.homeWins}</span>
-          <p className="text-[11px] text-slate-400">{homeTeam} wins</p>
+          <p className="text-[11px] text-muted">{homeTeam} wins</p>
         </div>
         <div>
-          <span className="text-2xl font-bold text-slate-300">{h2h.draws}</span>
-          <p className="text-[11px] text-slate-400">Draws</p>
+          <span className="text-2xl font-bold text-body">{h2h.draws}</span>
+          <p className="text-[11px] text-muted">Draws</p>
         </div>
         <div>
           <span className="text-2xl font-bold text-cyan-300">{h2h.awayWins}</span>
-          <p className="text-[11px] text-slate-400">{awayTeam} wins</p>
+          <p className="text-[11px] text-muted">{awayTeam} wins</p>
         </div>
       </div>
       {h2h.lastResults.length > 0 && (
         <div className="mt-3 space-y-1.5">
-          <p className="text-[11px] text-slate-500">Recent meetings:</p>
+          <p className="text-[11px] text-faint">Recent meetings:</p>
           {h2h.lastResults.map((result, i) => (
-            <div key={i} className="flex items-center justify-between rounded-lg bg-slate-950/50 px-2.5 py-1.5 text-xs">
-              <span className="text-slate-400">{new Date(result.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-              <span className="font-medium text-slate-200">
+            <div key={i} className="flex items-center justify-between rounded-lg bg-background/50 px-2.5 py-1.5 text-xs">
+              <span className="text-muted">{new Date(result.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              <span className="font-medium text-heading">
                 {result.homeTeam} {result.homeScore} – {result.awayScore} {result.awayTeam}
               </span>
-              {result.stage && <span className="text-slate-500">{result.stage}</span>}
+              {result.stage && <span className="text-faint">{result.stage}</span>}
             </div>
           ))}
         </div>
@@ -164,9 +164,9 @@ function TeamFormCard({
   label: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</p>
-      <p className="mb-2 text-sm font-semibold text-slate-100">{teamName}</p>
+    <div className="rounded-xl border border-border-subtle bg-surface/60 p-3">
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">{label}</p>
+      <p className="mb-2 text-sm font-semibold text-heading">{teamName}</p>
 
       {/* Record */}
       <div className="mb-2 flex gap-2 text-xs">
@@ -192,23 +192,23 @@ function TeamFormCard({
 
       {/* Mini stats */}
       <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-        <div className="rounded bg-slate-950/50 px-2 py-1">
-          <span className="text-slate-500">GF</span>{' '}
-          <span className="font-semibold text-slate-200">{stats.goalsFor}</span>
+        <div className="rounded bg-background/50 px-2 py-1">
+          <span className="text-faint">GF</span>{' '}
+          <span className="font-semibold text-heading">{stats.goalsFor}</span>
         </div>
-        <div className="rounded bg-slate-950/50 px-2 py-1">
-          <span className="text-slate-500">GA</span>{' '}
-          <span className="font-semibold text-slate-200">{stats.goalsAgainst}</span>
+        <div className="rounded bg-background/50 px-2 py-1">
+          <span className="text-faint">GA</span>{' '}
+          <span className="font-semibold text-heading">{stats.goalsAgainst}</span>
         </div>
-        <div className="rounded bg-slate-950/50 px-2 py-1">
-          <span className="text-slate-500">GD</span>{' '}
-          <span className={`font-semibold ${stats.goalDifference > 0 ? 'text-emerald-300' : stats.goalDifference < 0 ? 'text-red-300' : 'text-slate-200'}`}>
+        <div className="rounded bg-background/50 px-2 py-1">
+          <span className="text-faint">GD</span>{' '}
+          <span className={`font-semibold ${stats.goalDifference > 0 ? 'text-emerald-300' : stats.goalDifference < 0 ? 'text-red-300' : 'text-heading'}`}>
             {stats.goalDifference > 0 ? '+' : ''}{stats.goalDifference}
           </span>
         </div>
-        <div className="rounded bg-slate-950/50 px-2 py-1">
-          <span className="text-slate-500">CS</span>{' '}
-          <span className="font-semibold text-slate-200">{stats.cleanSheets}</span>
+        <div className="rounded bg-background/50 px-2 py-1">
+          <span className="text-faint">CS</span>{' '}
+          <span className="font-semibold text-heading">{stats.cleanSheets}</span>
         </div>
       </div>
     </div>

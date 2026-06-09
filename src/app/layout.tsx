@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,6 +19,20 @@ export const metadata: Metadata = {
   description: "Predict matches, track points, and climb the leaderboard.",
 };
 
+/* Inline script to set data-theme before first paint — avoids flash */
+const themeScript = `
+(function(){
+  try{
+    var t=localStorage.getItem('wc-theme');
+    if(t==='light'||t==='dark'){
+      document.documentElement.dataset.theme=t;
+    }else if(window.matchMedia('(prefers-color-scheme:light)').matches){
+      document.documentElement.dataset.theme='light';
+    }
+  }catch(e){}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,8 +42,14 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -90,25 +90,25 @@ export function PredictionForm({
   }
 
   return (
-    <div className="mt-3 rounded-lg border border-slate-800 p-3">
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-slate-400">
+    <div className="mt-3 rounded-lg border border-border-subtle p-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted">
         <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="sm" />
-        <span className="text-xs uppercase tracking-[0.16em] text-slate-500">vs</span>
+        <span className="text-xs uppercase tracking-[0.16em] text-faint">vs</span>
         <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="sm" />
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <input type="number" min={0} value={homeScore} onChange={(e) => setHomeScore(Number(e.target.value))} className="rounded border border-slate-700 bg-slate-950 px-2 py-1" />
-        <select value={result} onChange={(e) => setResult(e.target.value as 'home' | 'away' | 'draw')} className="rounded border border-slate-700 bg-slate-950 px-2 py-1">
+        <input type="number" min={0} value={homeScore} onChange={(e) => setHomeScore(Number(e.target.value))} className="rounded border border-border-default bg-background px-2 py-1" />
+        <select value={result} onChange={(e) => setResult(e.target.value as 'home' | 'away' | 'draw')} className="rounded border border-border-default bg-background px-2 py-1">
           <option value="home">{homeTeam} win</option>
           <option value="draw">Draw</option>
           <option value="away">{awayTeam} win</option>
         </select>
-        <input type="number" min={0} value={awayScore} onChange={(e) => setAwayScore(Number(e.target.value))} className="rounded border border-slate-700 bg-slate-950 px-2 py-1" />
+        <input type="number" min={0} value={awayScore} onChange={(e) => setAwayScore(Number(e.target.value))} className="rounded border border-border-default bg-background px-2 py-1" />
       </div>
       <button onClick={submitPrediction} disabled={loading || isLocked || !isSupabaseReady} className="mt-3 rounded bg-cyan-500 px-3 py-1 text-sm font-semibold text-slate-950 disabled:opacity-60">
         {!supabase ? 'Unavailable' : !currentUserId ? 'Login required' : isLocked ? 'Locked' : loading ? 'Saving...' : 'Save prediction'}
       </button>
-      {message && <p className="mt-2 text-xs text-slate-300">{message}</p>}
+      {message && <p className="mt-2 text-xs text-body">{message}</p>}
     </div>
   );
 }

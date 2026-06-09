@@ -214,7 +214,7 @@ export function VenueMap({ venues, selectedVenueId, onVenueSelect }: Props) {
   const layers = [selectedHaloLayer, ringLayer, markerLayer, countLayer, labelLayer];
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-slate-800 bg-slate-900">
+    <div className="overflow-hidden rounded-[24px] border border-border-subtle bg-surface">
       <div className="relative h-[50vh] min-h-[400px]">
         <DeckGL
           viewState={viewState}
@@ -240,7 +240,7 @@ export function VenueMap({ venues, selectedVenueId, onVenueSelect }: Props) {
         </DeckGL>
 
         {/* Map mode toggle */}
-        <div className="absolute right-4 top-4 flex rounded-full border border-slate-700 bg-slate-950/85 p-1 text-xs text-slate-300 shadow-lg backdrop-blur">
+        <div className="absolute right-4 top-4 flex rounded-full border border-border-default bg-background/85 p-1 text-xs text-body shadow-lg backdrop-blur">
           {(['map', 'satellite'] as const).map((mode) => (
             <button
               key={mode}
@@ -261,7 +261,7 @@ export function VenueMap({ venues, selectedVenueId, onVenueSelect }: Props) {
                 }));
               }}
               className={`rounded-full px-3 py-1.5 font-medium capitalize transition ${
-                mapMode === mode ? 'bg-cyan-400 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
+                mapMode === mode ? 'bg-cyan-400 text-slate-950' : 'text-body hover:bg-surface-raised'
               }`}
             >
               {mode}
@@ -271,13 +271,13 @@ export function VenueMap({ venues, selectedVenueId, onVenueSelect }: Props) {
 
         {/* Legend chips */}
         <div className="pointer-events-none absolute inset-x-4 bottom-4 flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-slate-700/60 bg-slate-950/70 px-3 py-1 text-[11px] text-slate-400 backdrop-blur">
+          <span className="rounded-full border border-border-default/60 bg-background/70 px-3 py-1 text-[11px] text-muted backdrop-blur">
             🇺🇸 United States
           </span>
-          <span className="rounded-full border border-slate-700/60 bg-slate-950/70 px-3 py-1 text-[11px] text-slate-400 backdrop-blur">
+          <span className="rounded-full border border-border-default/60 bg-background/70 px-3 py-1 text-[11px] text-muted backdrop-blur">
             🇲🇽 Mexico
           </span>
-          <span className="rounded-full border border-slate-700/60 bg-slate-950/70 px-3 py-1 text-[11px] text-slate-400 backdrop-blur">
+          <span className="rounded-full border border-border-default/60 bg-background/70 px-3 py-1 text-[11px] text-muted backdrop-blur">
             🇨🇦 Canada
           </span>
         </div>

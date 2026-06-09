@@ -15,11 +15,11 @@ export function TeamBadge({ team, size = 'md' }: Props) {
 
   return (
     <span className="inline-flex min-w-0 items-center gap-2 align-middle">
-      <span className={`relative shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-950 ${imageSize}`}>
+      <span className={`relative shrink-0 overflow-hidden rounded-full border border-border-default bg-background ${imageSize}`}>
         {imageUrl ? (
           <Image src={imageUrl} alt="" fill className="object-contain p-1" sizes="32px" unoptimized />
         ) : (
-          <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-300">
+          <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-body">
             {team.code ?? teamName.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -34,7 +34,7 @@ export function TeamBadge({ team, size = 'md' }: Props) {
           />
         )}
       </span>
-      <span className={`min-w-0 truncate font-medium text-slate-50 ${textSize}`}>{teamName}</span>
+      <span className={`min-w-0 truncate font-medium text-white ${textSize}`}>{teamName}</span>
     </span>
   );
 }

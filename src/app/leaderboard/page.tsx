@@ -28,7 +28,7 @@ function tierColor(tier: string) {
     case 'pro':
       return 'bg-amber-500/20 text-amber-200 ring-amber-500/30';
     default:
-      return 'bg-slate-700 text-slate-200 ring-slate-600';
+      return 'bg-surface-raised text-heading ring-border-strong';
   }
 }
 
@@ -63,23 +63,23 @@ export default async function LeaderboardPage() {
   const topThree = rows.slice(0, 3);
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 py-8 text-heading sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <AppNav />
-        <header className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur">
+        <header className="rounded-3xl border border-border-subtle bg-surface-overlay p-6 shadow-2xl shadow-accent/10 backdrop-blur">
           <div className="flex flex-col gap-3">
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">World Cup predictor</p>
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Leaderboard</h1>
-              <p className="max-w-2xl text-sm leading-6 text-slate-300">
+              <p className="max-w-2xl text-sm leading-6 text-body">
                 Rank players by points, XP, and streaks. This view reads directly from the Supabase
-                <code className="mx-1 rounded bg-slate-800 px-1.5 py-0.5 text-[0.8em]">leaderboard</code>
+                <code className="mx-1 rounded bg-surface-raised px-1.5 py-0.5 text-[0.8em]">leaderboard</code>
                 view.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Link href="/fixtures" className="rounded-full border border-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-800">
+              <Link href="/fixtures" className="rounded-full border border-border-default px-4 py-2 text-sm font-medium hover:bg-surface-raised">
                 Fixtures
               </Link>
               <Link href="/auth" className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400">
@@ -106,7 +106,7 @@ export default async function LeaderboardPage() {
 
         <section className="grid gap-4 md:grid-cols-3">
           {topThree.map((row) => (
-            <article key={row.user_id} className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
+            <article key={row.user_id} className="rounded-3xl border border-border-subtle bg-surface p-5 shadow-lg">
               <MixamoCharacterStage
                 mood={toCharacterMood(row.equipped_gesture) ?? tierMood(row.character_tier, row.rank)}
                 avatarId={toAvatarId(row.selected_avatar_id)}
@@ -116,7 +116,7 @@ export default async function LeaderboardPage() {
               />
               <div className="mt-4 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Rank #{row.rank}</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted">Rank #{row.rank}</p>
                   <h2 className="mt-1 text-xl font-semibold">{row.username ?? 'Anonymous'}</h2>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${tierColor(row.character_tier)}`}>
@@ -134,15 +134,15 @@ export default async function LeaderboardPage() {
           ))}
         </section>
 
-        <section className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-lg">
-          <div className="border-b border-slate-800 px-5 py-4">
+        <section className="overflow-hidden rounded-3xl border border-border-subtle bg-surface shadow-lg">
+          <div className="border-b border-border-subtle px-5 py-4">
             <h2 className="text-lg font-semibold">Full ranking</h2>
-            <p className="mt-1 text-sm text-slate-400">{rows.length} players on the board</p>
+            <p className="mt-1 text-sm text-muted">{rows.length} players on the board</p>
           </div>
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-950/60 text-slate-400">
+              <thead className="bg-background/60 text-muted">
                 <tr>
                   <th className="px-5 py-3 font-medium">Rank</th>
                   <th className="px-5 py-3 font-medium">Player</th>
@@ -156,10 +156,10 @@ export default async function LeaderboardPage() {
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.user_id} className="border-t border-slate-800 hover:bg-slate-800/50">
-                    <td className="px-5 py-3 font-medium text-slate-300">#{row.rank}</td>
+                  <tr key={row.user_id} className="border-t border-border-subtle hover:bg-surface-raised/50">
+                    <td className="px-5 py-3 font-medium text-body">#{row.rank}</td>
                     <td className="px-5 py-3">{row.username ?? 'Anonymous'}</td>
-                    <td className="px-5 py-3 text-slate-300">{avatarLabel(row)}</td>
+                    <td className="px-5 py-3 text-body">{avatarLabel(row)}</td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tierColor(row.character_tier)}`}>
                         {row.character_tier}
@@ -173,8 +173,8 @@ export default async function LeaderboardPage() {
                 ))}
                 {rows.length === 0 && !error && (
                   <tr>
-                    <td className="px-5 py-6 text-slate-400" colSpan={8}>
-                      No leaderboard data yet. Run predictions and update <code className="rounded bg-slate-800 px-1.5 py-0.5 text-[0.8em]">user_progress</code> to populate this table.
+                    <td className="px-5 py-6 text-muted" colSpan={8}>
+                      No leaderboard data yet. Run predictions and update <code className="rounded bg-surface-raised px-1.5 py-0.5 text-[0.8em]">user_progress</code> to populate this table.
                     </td>
                   </tr>
                 )}
@@ -233,9 +233,9 @@ function avatarLabel(row: LeaderboardRow) {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl bg-slate-950/60 p-3 ring-1 ring-slate-800">
-      <dt className="text-xs uppercase tracking-[0.16em] text-slate-400">{label}</dt>
-      <dd className="mt-1 text-2xl font-semibold text-slate-50">{value}</dd>
+    <div className="rounded-2xl bg-background/60 p-3 ring-1 ring-border-subtle">
+      <dt className="text-xs uppercase tracking-[0.16em] text-muted">{label}</dt>
+      <dd className="mt-1 text-2xl font-semibold text-white">{value}</dd>
     </div>
   );
 }
