@@ -76,7 +76,7 @@ export function AvatarComparisonLab() {
       <section className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-surface-overlay p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Avatar comparison</p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">Pick the direction by looking at motion, not promises.</h2>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-heading">Pick the direction by looking at motion, not promises.</h2>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex">
           {motionOptions.map((option) => (
@@ -99,7 +99,7 @@ export function AvatarComparisonLab() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Ready Player Me kit</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">{selectedKit.name} footballer preview</h2>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-heading">{selectedKit.name} footballer preview</h2>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:flex lg:flex-wrap lg:justify-end">
             {countryKits.map((kit) => (
@@ -137,7 +137,7 @@ export function AvatarComparisonLab() {
 
         <aside className="rounded-2xl border border-border-subtle bg-surface p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Country kit system</p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">{selectedKit.name}</h3>
+          <h3 className="mt-2 text-2xl font-semibold text-heading">{selectedKit.name}</h3>
           <div className="mt-5 grid grid-cols-5 gap-2">
             <KitSwatch label="Shirt" color={selectedKit.primary} />
             <KitSwatch label="Trim" color={selectedKit.secondary} />
@@ -161,7 +161,7 @@ export function AvatarComparisonLab() {
         {candidateSummaries.map((candidate) => (
           <article key={candidate.name} className="rounded-2xl border border-border-subtle bg-surface p-5">
             <p className="text-sm font-semibold text-cyan-300">{candidate.name}</p>
-            <h3 className="mt-2 text-xl font-semibold text-white">{candidate.verdict}</h3>
+            <h3 className="mt-2 text-xl font-semibold text-heading">{candidate.verdict}</h3>
             <dl className="mt-4 space-y-3 text-sm leading-6">
               <SummaryItem label="License" value={candidate.license} />
               <SummaryItem label="Speed" value={candidate.speed} />
@@ -204,7 +204,7 @@ function CandidateCard({
       <div className="space-y-4 p-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">{badge}</p>
-          <h3 className="mt-1 text-xl font-semibold text-white">{title}</h3>
+          <h3 className="mt-1 text-xl font-semibold text-heading">{title}</h3>
           <p className="mt-1 text-sm font-semibold text-emerald-300">{verdict}</p>
         </div>
         <div className="grid gap-2">

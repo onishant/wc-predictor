@@ -34,7 +34,7 @@ export function TeamBadge({ team, size = 'md' }: Props) {
           />
         )}
       </span>
-      <span className={`min-w-0 truncate font-medium text-white ${textSize}`}>{teamName}</span>
+      <span className={`min-w-0 truncate font-medium text-heading ${textSize}`}>{teamName}</span>
     </span>
   );
 }

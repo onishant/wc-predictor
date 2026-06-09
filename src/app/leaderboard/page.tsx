@@ -235,7 +235,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl bg-background/60 p-3 ring-1 ring-border-subtle">
       <dt className="text-xs uppercase tracking-[0.16em] text-muted">{label}</dt>
-      <dd className="mt-1 text-2xl font-semibold text-white">{value}</dd>
+      <dd className="mt-1 text-2xl font-semibold text-heading">{value}</dd>
     </div>
   );
 }

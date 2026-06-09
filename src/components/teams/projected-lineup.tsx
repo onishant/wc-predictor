@@ -30,7 +30,7 @@ function PlayerRow({ players }: { players: ProjectedLineup['goalkeeper'] }) {
     <div className="flex min-h-16 items-center justify-around gap-2">
       {players.map((player) => (
         <div key={player.id} className="max-w-36 rounded-xl border border-white/15 bg-background/85 px-3 py-2 text-center shadow-lg">
-          <span className="block text-xs font-semibold text-white">{player.name}</span>
+          <span className="block text-xs font-semibold text-heading">{player.name}</span>
           <span className="mt-1 block text-[10px] uppercase tracking-wider text-emerald-300">{player.position}</span>
         </div>
       ))}

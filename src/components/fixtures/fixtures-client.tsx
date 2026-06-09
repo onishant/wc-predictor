@@ -130,7 +130,7 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
                 {/* Venue header */}
                 <div className="rounded-2xl border border-border-subtle bg-surface/60 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">Selected venue</p>
-                  <h2 className="mt-1 text-xl font-semibold text-white">{selectedVenue.venueName}</h2>
+                  <h2 className="mt-1 text-xl font-semibold text-heading">{selectedVenue.venueName}</h2>
                   <p className="mt-1 text-sm text-body">
                     {selectedVenue.commonName} · {selectedVenue.city}, {selectedVenue.country}
                   </p>
