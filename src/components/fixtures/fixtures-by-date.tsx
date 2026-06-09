@@ -164,7 +164,6 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                           <div className="flex min-w-0 flex-1 items-center gap-2">
                             <div className="flex min-w-0 flex-1 items-center gap-2">
                               <TeamBadge team={match.homeTeamVisual} size="sm" />
-                              <span className="truncate text-sm font-medium text-heading">{match.homeTeam}</span>
                             </div>
 
                             <div className="flex flex-col items-center px-2">
@@ -178,7 +177,6 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                             </div>
 
                             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-                              <span className="truncate text-sm font-medium text-heading">{match.awayTeam}</span>
                               <TeamBadge team={match.awayTeamVisual} size="sm" />
                             </div>
                           </div>

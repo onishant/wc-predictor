@@ -77,8 +77,8 @@ export default async function TeamPage({ params }: Props) {
 
           <aside className="h-fit rounded-2xl border border-amber-800/70 bg-gradient-to-b from-amber-500/10 to-surface p-5 lg:sticky lg:top-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-400">Past World Cups</p>
-            <h2 className="mt-2 text-xl font-semibold text-amber-50">{trivia.headline}</h2>
-            <ul className="mt-4 space-y-4 text-sm leading-6 text-amber-100/80">
+            <h2 className="mt-2 text-xl font-semibold text-heading">{trivia.headline}</h2>
+            <ul className="mt-4 space-y-4 text-sm leading-6 text-body">
               {trivia.facts.map((fact) => <li key={fact} className="border-l-2 border-amber-500/50 pl-3">{fact}</li>)}
             </ul>
           </aside>
