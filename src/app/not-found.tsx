@@ -1,21 +1,9 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 text-heading">
-      {/* Hero image — full opacity background */}
-      <Image
-        src="/images/wc-heroes.png"
-        alt=""
-        fill
-        className="object-cover object-center opacity-25"
-        sizes="100vw"
-        priority
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/40 to-background/80" />
-
-      <div className="relative z-10 max-w-md text-center">
+    <main className="flex min-h-screen items-center justify-center px-4 text-heading">
+      <div className="max-w-md text-center">
         <p className="text-8xl font-bold text-cyan-500/30">404</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Page not found</h1>
         <p className="mt-3 text-sm leading-6 text-muted">
