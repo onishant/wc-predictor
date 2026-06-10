@@ -45,8 +45,9 @@ export default function HomePage() {
     const uid = user?.id ?? null;
     setUserId(uid);
 
-    // Get upcoming matches (next 5)
+    // Get upcoming matches (next 48 hours)
     const now = new Date().toISOString();
+    const in48h = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
     const { data: matchData } = await supabase
       .from('matches')
       .select(`
@@ -62,8 +63,8 @@ export default function HomePage() {
         status
       `)
       .gte('kickoff_utc', now)
-      .order('kickoff_utc', { ascending: true })
-      .limit(5);
+      .lte('kickoff_utc', in48h)
+      .order('kickoff_utc', { ascending: true });
 
     if (matchData) {
       const parsed = (matchData as unknown as Array<{
