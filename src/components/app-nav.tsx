@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { UserProfileCard } from '@/components/user-profile-card';
 import { supabase } from '@/lib/supabase-browser';
 
 export function AppNav() {
@@ -81,21 +82,18 @@ export function AppNav() {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border border-border-subtle bg-surface p-1 shadow-xl">
-              <div className="px-3 py-2 text-xs text-muted">
-                Signed in as <strong className="text-heading">{displayName}</strong>
+            <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-border-subtle bg-surface shadow-xl">
+              <UserProfileCard onClose={() => setMenuOpen(false)} />
+              <div className="border-t border-border-subtle" />
+              <div className="p-2">
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm text-rose-300 hover:bg-rose-500/10"
+                >
+                  Sign out
+                </button>
               </div>
-              {email && (
-                <div className="px-3 pb-2 text-xs text-faint">{email}</div>
-              )}
-              <div className="border-t border-border-subtle my-1" />
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="w-full rounded-lg px-3 py-2 text-left text-sm text-rose-300 hover:bg-rose-500/10"
-              >
-                Sign out
-              </button>
             </div>
           )}
         </div>
