@@ -58,11 +58,14 @@ export async function fetchAndStoreNews() {
     return { articles: 0, teams: 0, reason: 'no_teams_found' };
   }
 
-  // Build search terms: team names + codes, lowercased
+  // Build search terms: team names only (skip short codes to avoid false positives like "Can" matching "Canada")
   const searchTerms: string[] = [];
   for (const t of teams) {
     searchTerms.push(t.name.toLowerCase());
-    if (t.code) searchTerms.push(t.code.toLowerCase());
+    // Only use codes that are 4+ chars (e.g., "MEX" is fine, "CAN" matches "Can Mourinho")
+    if (t.code && t.code.length >= 4) {
+      searchTerms.push(t.code.toLowerCase());
+    }
   }
 
   // 2. Fetch and parse all RSS feeds
