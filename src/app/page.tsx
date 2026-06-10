@@ -18,7 +18,6 @@ type Match = {
   away_team_id: string;
   kickoff_utc: string;
   stage: string | null;
-  group_name: string | null;
   status: string;
   home_crest: string | null;
   away_crest: string | null;
@@ -52,7 +51,7 @@ export default function HomePage() {
 
     const { data: matchData, error: matchError } = await supabase
       .from('matches')
-      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, group_name, status, home_score, away_score')
+      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
       .gte('kickoff_utc', now)
       .lte('kickoff_utc', in48h)
       .order('kickoff_utc', { ascending: true });
@@ -92,7 +91,6 @@ export default function HomePage() {
           away_team_id: m.away_team_id,
           kickoff_utc: m.kickoff_utc,
           stage: m.stage,
-          group_name: m.group_name,
           status: m.status,
           home_crest: ht?.crest_url ?? null,
           away_crest: at?.crest_url ?? null,
@@ -201,7 +199,7 @@ export default function HomePage() {
                   awayTeamVisual={{ name: match.away_team, crestUrl: match.away_crest } as TeamVisual}
                   kickoffUtc={match.kickoff_utc}
                   stage={match.stage ?? undefined}
-                  group={match.group_name ?? undefined}
+                  group={undefined}
                   status={match.status}
                   predictedResult={pred?.predicted_result ?? null}
                   predictedHomeScore={pred?.pred_home_score ?? null}
@@ -232,7 +230,7 @@ export default function HomePage() {
           awayTeamVisual={{ name: predictionMatch.away_team, crestUrl: predictionMatch.away_crest } as TeamVisual}
           kickoffUtc={predictionMatch.kickoff_utc}
           userId={userId ?? ''}
-          group={predictionMatch.group_name ?? undefined}
+          group={undefined}
           initialHomeScore={predictions[predictionMatch.external_match_id]?.pred_home_score ?? null}
           initialAwayScore={predictions[predictionMatch.external_match_id]?.pred_away_score ?? null}
           onClose={() => setPredictionMatchId(null)}
