@@ -36,7 +36,6 @@ export function AuthPanel() {
     supabase
       .from('teams')
       .select('id, name, code, crest_url')
-      .not('external_team_id', 'is', null)
       .order('name')
       .then(({ data, error }) => {
         if (error) {
