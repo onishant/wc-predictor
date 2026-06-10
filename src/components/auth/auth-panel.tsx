@@ -1,8 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-browser';
+
+type Team = {
+  id: string;
+  name: string;
+  code: string | null;
+  crest_url: string | null;
+};
 
 export function AuthPanel() {
   const router = useRouter();
@@ -17,7 +25,23 @@ export function AuthPanel() {
   const [loading, setLoading] = useState(false);
   const [groupName, setGroupName] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [teamSearch, setTeamSearch] = useState('');
   const isSupabaseReady = Boolean(supabase);
+
+  // Load teams
+  useEffect(() => {
+    if (!supabase) return;
+    supabase
+      .from('teams')
+      .select('id, name, code, crest_url')
+      .not('external_team_id', 'is', null)
+      .order('name')
+      .then(({ data }) => {
+        setTeams((data as Team[] | null) ?? []);
+      });
+  }, []);
 
   // Validate signup token and get group info
   useEffect(() => {
@@ -39,6 +63,10 @@ export function AuthPanel() {
         setGroupName(Array.isArray(g) ? g[0]?.name : g?.name ?? null);
       });
   }, [signupToken]);
+
+  const filteredTeams = teamSearch
+    ? teams.filter(t => t.name.toLowerCase().includes(teamSearch.toLowerCase()) || (t.code?.toLowerCase().includes(teamSearch.toLowerCase())))
+    : teams;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,14 +93,19 @@ export function AuthPanel() {
         });
         if (error) throw error;
 
-        if (data.session && groupId) {
-          await supabase!
-            .from('users_profile')
-            .update({ group_id: groupId })
-            .eq('id', data.user!.id);
-        }
-
         if (data.session) {
+          const userId = data.user!.id;
+
+          // Assign group if via signup token
+          if (groupId) {
+            await supabase!.from('users_profile').update({ group_id: groupId }).eq('id', userId);
+          }
+
+          // Save supported team to avatar profile
+          if (selectedTeamId) {
+            await supabase!.from('user_avatar_profiles').update({ supported_team_id: selectedTeamId }).eq('user_id', userId);
+          }
+
           router.push('/');
           return;
         }
@@ -189,6 +222,70 @@ export function AuthPanel() {
             required
           />
         </div>
+
+        {/* Team picker — signup only */}
+        {mode === 'signup' && teams.length > 0 && (
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+              Your team <span className="font-normal normal-case">(optional)</span>
+            </label>
+            <p className="mb-2 text-xs text-faint">Pick your favorite team. Their crest will appear on your leaderboard avatar.</p>
+
+            {/* Selected team display */}
+            {selectedTeamId && (
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-cyan-400/40 bg-cyan-500/10 px-3 py-2">
+                {teams.find(t => t.id === selectedTeamId)?.crest_url && (
+                  <Image
+                    src={teams.find(t => t.id === selectedTeamId)!.crest_url!}
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="object-contain"
+                    unoptimized
+                  />
+                )}
+                <span className="text-sm font-medium text-heading">{teams.find(t => t.id === selectedTeamId)?.name}</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTeamId(null)}
+                  className="ml-auto text-xs text-muted hover:text-heading"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Search + grid */}
+            {!selectedTeamId && (
+              <>
+                <input
+                  className="mb-2 w-full rounded-xl border border-border-default bg-background px-4 py-2.5 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  placeholder="Search teams…"
+                  value={teamSearch}
+                  onChange={(e) => setTeamSearch(e.target.value)}
+                />
+                <div className="grid max-h-40 gap-1.5 overflow-y-auto rounded-xl border border-border-subtle bg-background p-2 md:grid-cols-2">
+                  {filteredTeams.map((team) => (
+                    <button
+                      key={team.id}
+                      type="button"
+                      onClick={() => { setSelectedTeamId(team.id); setTeamSearch(''); }}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-surface-raised"
+                    >
+                      {team.crest_url && (
+                        <Image src={team.crest_url} alt="" width={18} height={18} className="object-contain" unoptimized />
+                      )}
+                      <span className="truncate text-heading">{team.name}</span>
+                    </button>
+                  ))}
+                  {filteredTeams.length === 0 && (
+                    <p className="px-3 py-2 text-xs text-muted">No teams match.</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <button
           type="submit"
