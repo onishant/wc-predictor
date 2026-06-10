@@ -86,7 +86,15 @@ export function PredictionForm({
     }, { onConflict: 'user_id,match_external_id' });
 
     setLoading(false);
-    setMessage(error ? error.message : 'Prediction saved.');
+    if (error) {
+      if (error.message.includes('row-level security') || error.message.includes('policy')) {
+        setMessage('Prediction locked: this match has already started.');
+      } else {
+        setMessage(error.message);
+      }
+    } else {
+      setMessage('Prediction saved.');
+    }
   }
 
   return (
