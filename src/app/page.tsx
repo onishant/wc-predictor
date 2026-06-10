@@ -48,39 +48,41 @@ export default function HomePage() {
     // Get upcoming matches (next 48 hours)
     const now = new Date().toISOString();
     const in48h = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-    const { data: matchData } = await supabase
+    console.log('[Home] fetching matches', { now, in48h });
+
+    const { data: matchData, error: matchError } = await supabase
       .from('matches')
-      .select(`
-        id,
-        external_match_id,
-        home_team:teams!matches_home_team_id_fkey(name, crest_url),
-        away_team:teams!matches_away_team_id_fkey(name, crest_url),
-        home_team_id,
-        away_team_id,
-        kickoff_utc,
-        stage,
-        group_name,
-        status
-      `)
+      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, group_name, status, home_score, away_score')
       .gte('kickoff_utc', now)
       .lte('kickoff_utc', in48h)
       .order('kickoff_utc', { ascending: true });
 
+    if (matchError) {
+      console.error('[Home] matches error:', matchError);
+    }
+    console.log('[Home] matches:', matchData?.length, matchData?.slice(0, 3));
+
+    // Fetch teams separately
+    const teamIds = new Set<string>();
+    for (const m of matchData ?? []) {
+      if (m.home_team_id) teamIds.add(m.home_team_id);
+      if (m.away_team_id) teamIds.add(m.away_team_id);
+    }
+    const teamMap = new Map<string, { name: string; crest_url: string | null }>();
+    if (teamIds.size > 0) {
+      const { data: teams } = await supabase
+        .from('teams')
+        .select('id, name, crest_url')
+        .in('id', [...teamIds]);
+      for (const t of teams ?? []) {
+        teamMap.set(t.id, { name: t.name, crest_url: t.crest_url });
+      }
+    }
+
     if (matchData) {
-      const parsed = (matchData as unknown as Array<{
-        id: string;
-        external_match_id: string;
-        home_team: { name: string; crest_url: string | null } | { name: string; crest_url: string | null }[];
-        away_team: { name: string; crest_url: string | null } | { name: string; crest_url: string | null }[];
-        home_team_id: string;
-        away_team_id: string;
-        kickoff_utc: string;
-        stage: string | null;
-        group_name: string | null;
-        status: string;
-      }>).map(m => {
-        const ht = Array.isArray(m.home_team) ? m.home_team[0] : m.home_team;
-        const at = Array.isArray(m.away_team) ? m.away_team[0] : m.away_team;
+      const parsed = matchData.map(m => {
+        const ht = m.home_team_id ? teamMap.get(m.home_team_id) : null;
+        const at = m.away_team_id ? teamMap.get(m.away_team_id) : null;
         return {
           id: m.id,
           external_match_id: m.external_match_id,
