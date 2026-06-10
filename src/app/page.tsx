@@ -59,7 +59,6 @@ export default function HomePage() {
     // Get upcoming matches (next 48 hours)
     const now = new Date().toISOString();
     const in48h = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-    console.log('[Home] fetching matches', { now, in48h });
 
     const { data: matchData, error: matchError } = await supabase
       .from('matches')
@@ -71,7 +70,6 @@ export default function HomePage() {
     if (matchError) {
       console.error('[Home] matches error:', matchError);
     }
-    console.log('[Home] matches:', matchData?.length, matchData?.slice(0, 3));
 
     // Fetch teams separately
     const teamIds = new Set<string>();

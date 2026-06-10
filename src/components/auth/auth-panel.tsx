@@ -41,7 +41,6 @@ export function AuthPanel() {
         if (error) {
           console.error('[AuthPanel] teams fetch error:', error);
         }
-        console.log('[AuthPanel] teams data:', data?.length, 'rows, sample:', data?.[0]);
         setTeams((data as Team[] | null) ?? []);
       });
   }, []);
