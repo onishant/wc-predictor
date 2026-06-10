@@ -86,7 +86,7 @@ export function AuthPanel() {
         const { data, error } = await supabase!.auth.signUp({
           email,
           password,
-          options: { data: { username: username.trim(), ...(groupId ? { group_id: groupId } : {}) } },
+          options: { data: { username: username.trim(), display_name: username.trim(), ...(groupId ? { group_id: groupId } : {}) } },
         });
         if (error) throw error;
 

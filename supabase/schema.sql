@@ -149,6 +149,9 @@ declare
   final_username text;
 begin
   base_username := nullif(trim(new.raw_user_meta_data->>'username'), '');
+  if base_username is null then
+    base_username := nullif(trim(new.raw_user_meta_data->>'display_name'), '');
+  end if;
 
   if base_username is null then
     base_username := nullif(split_part(new.email, '@', 1), '');
