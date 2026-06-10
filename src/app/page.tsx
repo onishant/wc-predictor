@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AppNav } from '@/components/app-nav';
 import { MatchCard } from '@/components/fixtures/match-card';
 import { PredictionPanel } from '@/components/fixtures/prediction-panel';
@@ -135,19 +136,32 @@ export default function HomePage() {
         <AppNav />
 
         {/* Hero */}
-        <header className="mt-6 rounded-3xl border border-border-subtle bg-surface-overlay p-6 shadow-2xl shadow-accent/10 backdrop-blur">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">FIFA World Cup 2026</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Predict. Score. Climb.</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-body">
-            Make your predictions for upcoming matches. Get points for correct results. Climb the leaderboard.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/fixtures" className="rounded-full bg-cyan-500 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400">
-              All fixtures
-            </Link>
-            <Link href="/leaderboard" className="rounded-full border border-border-default px-5 py-2 text-sm font-medium text-body hover:bg-surface-raised">
-              Leaderboard
-            </Link>
+        <header className="relative mt-6 overflow-hidden rounded-3xl border border-border-subtle shadow-2xl shadow-accent/10">
+          {/* Hero image background */}
+          <div className="absolute inset-0">
+            <Image
+              src="/images/wc-heroes.png"
+              alt=""
+              fill
+              className="object-cover opacity-20"
+              sizes="(max-width: 1024px) 100vw, 1024px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-surface-overlay via-surface-overlay/90 to-surface-overlay/70" />
+          </div>
+          <div className="relative p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">FIFA World Cup 2026</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Predict. Score. Climb.</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-body">
+              Make your predictions for upcoming matches. Get points for correct results. Climb the leaderboard.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/fixtures" className="rounded-full bg-cyan-500 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400">
+                All fixtures
+              </Link>
+              <Link href="/leaderboard" className="rounded-full border border-border-default px-5 py-2 text-sm font-medium text-body hover:bg-surface-raised">
+                Leaderboard
+              </Link>
+            </div>
           </div>
         </header>
 
