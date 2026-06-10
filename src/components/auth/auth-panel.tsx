@@ -42,6 +42,7 @@ export function AuthPanel() {
         if (error) {
           console.error('[AuthPanel] teams fetch error:', error);
         }
+        console.log('[AuthPanel] teams data:', data?.length, 'rows, sample:', data?.[0]);
         setTeams((data as Team[] | null) ?? []);
       });
   }, []);
@@ -188,10 +189,10 @@ export function AuthPanel() {
                   {filteredTeams.map((team) => (
                     <button key={team.id} type="button" onClick={() => { setSelectedTeamId(team.id); setTeamSearch(''); }} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-surface-raised">
                       {team.crest_url && <Image src={team.crest_url} alt="" width={18} height={18} className="object-contain" unoptimized />}
-                      <span className="truncate text-heading">{team.name}</span>
+                      <span className="truncate text-heading">{team.name || `[no name: ${team.id}]`}</span>
                     </button>
                   ))}
-                  {filteredTeams.length === 0 && <p className="px-3 py-2 text-xs text-muted">No teams match.</p>}
+                  {filteredTeams.length === 0 && <p className="px-3 py-2 text-xs text-muted">No teams match. ({teams.length} total teams loaded)</p>}
                 </div>
               </>
             )}
