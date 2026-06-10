@@ -221,6 +221,10 @@ export function AuthPanel() {
           By signing up you agree to compete fairly on the leaderboard.
         </p>
       )}
+
+      <p className="mt-5 text-center text-[10px] leading-relaxed text-faint">
+        This app is an unofficial fan project and is not affiliated with, endorsed by, or associated with FIFA.
+      </p>
     </div>
   );
 }
