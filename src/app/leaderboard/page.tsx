@@ -5,15 +5,12 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import { AppNav } from '@/components/app-nav';
 import { AvatarBadge } from '@/components/avatar/avatar-badge';
-import type { AvatarFeatureId } from '@/lib/avatar-catalog';
 
 type LeaderboardRow = {
   user_id: string;
   points: number;
-  xp: number;
   current_streak: number;
   best_streak: number;
-  character_tier: string;
   username: string | null;
   group_id: string | null;
   selected_avatar_id?: string | null;
@@ -21,33 +18,18 @@ type LeaderboardRow = {
   supported_team_id?: string | null;
   team_crest_url?: string | null;
   team_name?: string | null;
+  settled_count: number;
+  correct_count: number;
 };
 
 type Tab = 'group' | 'overall';
 
-function tierColor(tier: string) {
-  switch (tier.toLowerCase()) {
-    case 'legend': return 'bg-fuchsia-500/20 text-fuchsia-200 ring-fuchsia-500/30';
-    case 'elite': return 'bg-cyan-500/20 text-cyan-200 ring-cyan-500/30';
-    case 'pro': return 'bg-amber-500/20 text-amber-200 ring-amber-500/30';
-    default: return 'bg-surface-raised text-heading ring-border-strong';
-  }
+function accuracyPercent(settled: number, correct: number): string {
+  if (settled === 0) return '—';
+  return `${Math.round((correct / settled) * 100)}%`;
 }
 
-function toFeatureId(value?: string | null): AvatarFeatureId {
-  if (value === 'football' || value === 'clubAura' || value === 'captainBand' || value === 'championGlow') return value;
-  return 'none';
-}
-
-function avatarLabel(row: LeaderboardRow) {
-  const feature = toFeatureId(row.equipped_feature);
-  const teamName = row.team_name ?? 'No team';
-  if (feature === 'none') return teamName;
-  const featureName = feature === 'football' ? 'Football control' : feature === 'clubAura' ? 'Club aura' : feature === 'captainBand' ? 'Captain band' : 'Champion glow';
-  return `${teamName} · ${featureName}`;
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-2xl bg-background/60 p-3 ring-1 ring-border-subtle">
       <dt className="text-xs uppercase tracking-[0.16em] text-muted">{label}</dt>
@@ -89,9 +71,8 @@ export default function LeaderboardPage() {
 
       const { data, error: fetchError } = await supabase!
         .from('leaderboard')
-        .select('user_id, points, xp, current_streak, best_streak, character_tier, username, group_id, selected_avatar_id, equipped_feature, supported_team_id, team_crest_url, team_name')
-        .order('points', { ascending: false })
-        .order('xp', { ascending: false });
+        .select('user_id, points, current_streak, best_streak, username, group_id, selected_avatar_id, equipped_feature, supported_team_id, team_crest_url, team_name, settled_count, correct_count')
+        .order('points', { ascending: false });
 
       if (fetchError) {
         setError(fetchError.message);
@@ -113,6 +94,8 @@ export default function LeaderboardPage() {
   const userGroupRank = userId && userGroupId
     ? allRows.filter(r => r.group_id === userGroupId).findIndex(r => r.user_id === userId) + 1
     : 0;
+
+  const userRow = userId ? allRows.find(r => r.user_id === userId) : null;
 
   const topThree = rows.slice(0, 3);
 
@@ -152,6 +135,12 @@ export default function LeaderboardPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Your overall rank</p>
               <p className="mt-1 text-2xl font-bold text-cyan-300">#{userOverallRank} <span className="text-sm font-normal text-muted">of {allRows.length}</span></p>
             </div>
+            {userRow && userRow.settled_count > 0 && (
+              <div className="text-center">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Accuracy</p>
+                <p className="mt-1 text-2xl font-bold text-emerald-300">{accuracyPercent(userRow.settled_count, userRow.correct_count)}</p>
+              </div>
+            )}
             {userGroupId && userGroupRank > 0 && (
               <div className="text-right">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Group rank</p>
@@ -204,20 +193,14 @@ export default function LeaderboardPage() {
                     size="lg"
                   />
                 </div>
-                <div className="mt-4 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted">Rank #{row.rank}</p>
-                    <h2 className="mt-1 text-xl font-semibold">{row.username ?? 'Anonymous'}</h2>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${tierColor(row.character_tier)}`}>
-                    {row.character_tier}
-                  </span>
+                <div className="mt-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted">Rank #{row.rank}</p>
+                  <h2 className="mt-1 text-xl font-semibold">{row.username ?? 'Anonymous'}</h2>
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
                   <Stat label="Points" value={row.points} />
-                  <Stat label="XP" value={row.xp} />
-                  <Stat label="Current streak" value={row.current_streak} />
-                  <Stat label="Best streak" value={row.best_streak} />
+                  <Stat label="Streak" value={row.current_streak} />
+                  <Stat label="Accuracy" value={accuracyPercent(row.settled_count, row.correct_count)} />
                 </dl>
               </article>
             ))}
@@ -237,10 +220,8 @@ export default function LeaderboardPage() {
                 <tr>
                   <th className="px-5 py-3 font-medium">Rank</th>
                   <th className="px-5 py-3 font-medium">Player</th>
-                  <th className="px-5 py-3 font-medium">Avatar</th>
-                  <th className="px-5 py-3 font-medium">Tier</th>
                   <th className="px-5 py-3 font-medium text-right">Points</th>
-                  <th className="px-5 py-3 font-medium text-right">XP</th>
+                  <th className="px-5 py-3 font-medium text-right">Accuracy</th>
                   <th className="px-5 py-3 font-medium text-right">Streak</th>
                   <th className="px-5 py-3 font-medium text-right">Best</th>
                 </tr>
@@ -263,21 +244,21 @@ export default function LeaderboardPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-body">{avatarLabel(row)}</td>
-                    <td className="px-5 py-3">
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tierColor(row.character_tier)}`}>
-                        {row.character_tier}
-                      </span>
-                    </td>
                     <td className="px-5 py-3 text-right font-semibold text-cyan-300">{row.points}</td>
-                    <td className="px-5 py-3 text-right">{row.xp}</td>
+                    <td className="px-5 py-3 text-right">
+                      {row.settled_count > 0 ? (
+                        <span className="font-medium text-emerald-400">{accuracyPercent(row.settled_count, row.correct_count)}</span>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3 text-right">{row.current_streak}</td>
                     <td className="px-5 py-3 text-right">{row.best_streak}</td>
                   </tr>
                 ))}
                 {rows.length === 0 && !error && (
                   <tr>
-                    <td className="px-5 py-6 text-muted" colSpan={8}>
+                    <td className="px-5 py-6 text-muted" colSpan={6}>
                       {tab === 'group' ? 'No one in this group yet.' : 'No leaderboard data yet.'}
                     </td>
                   </tr>
