@@ -66,7 +66,6 @@ export function AuthPanel() {
         if (error) throw error;
 
         if (data.session && groupId) {
-          // Assign user to group immediately
           await supabase!
             .from('users_profile')
             .update({ group_id: groupId })
@@ -82,7 +81,7 @@ export function AuthPanel() {
       } else {
         const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) {
-          setMessage(`Login error: ${error.message}`);
+          setMessage(error.message);
           setLoading(false);
           return;
         }
@@ -91,7 +90,6 @@ export function AuthPanel() {
           setLoading(false);
           return;
         }
-        // Session confirmed — navigate
         router.push('/');
       }
     } catch (err) {
@@ -102,60 +100,127 @@ export function AuthPanel() {
   }
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface p-4">
+    <div>
       {!isSupabaseReady && (
-        <p className="mb-4 rounded-lg border border-amber-900/60 bg-amber-950/50 px-3 py-2 text-sm text-amber-200">
-          Supabase env vars are missing, so auth is disabled for now.
-        </p>
+        <div className="mb-5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          <p className="font-semibold">Configuration needed</p>
+          <p className="mt-1 text-xs text-amber-200/70">Supabase env vars are missing, so auth is disabled.</p>
+        </div>
       )}
 
       {signupToken && groupName && (
-        <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
-          Joining group: <strong>{groupName}</strong>
+        <div className="mb-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400/80">Group invite</p>
+          <p className="mt-1 font-semibold">{groupName}</p>
         </div>
       )}
 
       {signupToken && !groupName && message && (
-        <div className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {message}
         </div>
       )}
 
-      <div className="mb-4 flex gap-2">
-        <button className={`rounded px-3 py-1 text-sm ${mode === 'login' ? 'bg-cyan-500 text-slate-950' : 'bg-surface-raised'}`} onClick={() => setMode('login')} type="button">Login</button>
-        <button className={`rounded px-3 py-1 text-sm ${mode === 'signup' ? 'bg-cyan-500 text-slate-950' : 'bg-surface-raised'}`} onClick={() => setMode('signup')} type="button">Sign up</button>
+      {/* Tab switcher */}
+      <div className="mb-6 flex rounded-xl bg-surface-raised p-1">
+        <button
+          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
+            mode === 'login' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'
+          }`}
+          onClick={() => { setMode('login'); setMessage(null); }}
+          type="button"
+        >
+          Log in
+        </button>
+        <button
+          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
+            mode === 'signup' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'
+          }`}
+          onClick={() => { setMode('signup'); setMessage(null); }}
+          type="button"
+        >
+          Sign up
+        </button>
       </div>
-      <form className="space-y-3" onSubmit={handleSubmit}>
+
+      <form className="space-y-4" onSubmit={handleSubmit}>
         {mode === 'signup' && (
+          <div>
+            <label htmlFor="auth-username" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+              Username
+            </label>
+            <input
+              id="auth-username"
+              className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              placeholder="Your display name"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="auth-email" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+            Email
+          </label>
           <input
-            className="w-full rounded border border-border-default bg-background px-3 py-2"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            id="auth-email"
+            className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            placeholder="you@example.com"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
-        )}
-        <input
-          className="w-full rounded border border-border-default bg-background px-3 py-2"
-          placeholder="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="w-full rounded border border-border-default bg-background px-3 py-2"
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button disabled={loading || !isSupabaseReady || (!!signupToken && !groupName)} className="rounded bg-cyan-500 px-4 py-2 font-semibold text-slate-950 disabled:opacity-60">
-          {!isSupabaseReady ? 'Unavailable' : loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create account'}
+        </div>
+
+        <div>
+          <label htmlFor="auth-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+            Password
+          </label>
+          <input
+            id="auth-password"
+            className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            placeholder="••••••••"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !isSupabaseReady || (!!signupToken && !groupName)}
+          className="w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {!isSupabaseReady
+            ? 'Unavailable'
+            : loading
+              ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+                  Please wait…
+                </span>
+              )
+              : mode === 'login'
+                ? 'Log in'
+                : 'Create account'}
         </button>
       </form>
-      {message && <p className={`mt-3 text-sm font-medium ${message.startsWith('Login error') || message.startsWith('No session') ? 'text-rose-300' : 'text-body'}`}>{message}</p>}
+
+      {message && !signupToken && (
+        <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          {message}
+        </div>
+      )}
+
+      {mode === 'signup' && !signupToken && (
+        <p className="mt-4 text-center text-xs text-muted">
+          By signing up you agree to compete fairly on the leaderboard.
+        </p>
+      )}
     </div>
   );
 }
