@@ -21,6 +21,7 @@ type MatchGroup = {
   dateKey: string;
   dateLabel: string;
   dayLabel: string;
+  monthLabel: string;
   matchday: string;
   matches: WorldCupMatchSummary[];
 };
@@ -50,6 +51,8 @@ function groupMatchesByDate(matches: WorldCupMatchSummary[]): MatchGroup[] {
       }),
       dayLabel: date.toLocaleDateString('en-GB', {
         day: 'numeric',
+      }),
+      monthLabel: date.toLocaleDateString('en-GB', {
         month: 'short',
       }),
       matchday: `Matchday ${index + 1}`,
@@ -100,7 +103,7 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
       {/* Timeline */}
       <div className="relative">
         {/* Vertical timeline line */}
-        <div className="absolute left-[19px] top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-border-default/40 to-transparent" />
+        <div className="absolute left-[27px] top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-border-default/40 to-transparent" />
 
         {groups.map((group, groupIndex) => (
           <div key={group.dateKey} className="relative pb-8 last:pb-0">
@@ -108,12 +111,13 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
             <div className="relative flex items-start gap-4">
               {/* Timeline dot */}
               <div className="relative z-10 flex flex-col items-center">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-xs font-bold ${
+                <div className={`flex h-14 w-14 flex-col items-center justify-center rounded-full border-2 text-center ${
                   groupIndex === 0
                     ? 'border-cyan-400 bg-cyan-400/20 text-cyan-300'
                     : 'border-border-default bg-surface text-muted'
                 }`}>
-                  {group.dayLabel}
+                  <span className="text-base font-bold leading-none">{group.dayLabel}</span>
+                  <span className="text-[10px] font-semibold uppercase leading-none mt-0.5">{group.monthLabel}</span>
                 </div>
               </div>
 
