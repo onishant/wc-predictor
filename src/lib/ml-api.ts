@@ -55,9 +55,7 @@ async function mlFetch<T>(path: string): Promise<T | null> {
   }
 
   try {
-    const response = await fetch(`${ML_API_BASE}${path}`, {
-      next: { revalidate: 300 },
-    });
+    const response = await fetch(`${ML_API_BASE}${path}`);
     if (!response.ok) return null;
     const data = (await response.json()) as T;
     cache.set(path, { data, timestamp: Date.now() });
