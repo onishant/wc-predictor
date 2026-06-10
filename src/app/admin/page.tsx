@@ -20,6 +20,13 @@ type SignupToken = {
   group_name?: string;
 };
 
+type Member = {
+  id: string;
+  username: string;
+  group_id: string | null;
+  role: string;
+};
+
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -28,6 +35,9 @@ export default function AdminPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [membersFilter, setMembersFilter] = useState<'all' | 'no_group'>('all');
+  const [memberSearch, setMemberSearch] = useState('');
 
   const loadData = useCallback(async () => {
     if (!supabase) return;
@@ -54,9 +64,10 @@ export default function AdminPage() {
 
     setIsAdmin(true);
 
-    const [groupsRes, tokensRes] = await Promise.all([
+    const [groupsRes, tokensRes, membersRes] = await Promise.all([
       supabase.from('groups').select('id, name, invite_code, created_at').order('created_at', { ascending: false }),
       supabase.from('group_signup_tokens').select('id, group_id, token, uses_remaining, created_at').order('created_at', { ascending: false }),
+      supabase.from('users_profile').select('id, username, group_id, role').order('username', { ascending: true }),
     ]);
 
     setGroups((groupsRes.data as Group[] | null) ?? []);
@@ -64,6 +75,8 @@ export default function AdminPage() {
     const tokenData = (tokensRes.data as SignupToken[] | null) ?? [];
     const groupMap = new Map(((groupsRes.data as Group[] | null) ?? []).map(g => [g.id, g.name]));
     setTokens(tokenData.map(t => ({ ...t, group_name: groupMap.get(t.group_id) ?? 'Unknown' })));
+
+    setMembers((membersRes.data as Member[] | null) ?? []);
 
     setLoading(false);
   }, []);
@@ -147,6 +160,29 @@ export default function AdminPage() {
     setMessage('Copied to clipboard.');
   }
 
+  async function assignMemberGroup(userId: string, groupId: string | null) {
+    if (!supabase) return;
+    setActionLoading(true);
+    setMessage(null);
+
+    const { error } = await supabase
+      .from('users_profile')
+      .update({ group_id: groupId })
+      .eq('id', userId);
+
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage('Group updated.');
+      await loadData();
+    }
+    setActionLoading(false);
+  }
+
+  const filteredMembers = members
+    .filter(m => membersFilter === 'all' || m.group_id === null)
+    .filter(m => !memberSearch || m.username.toLowerCase().includes(memberSearch.toLowerCase()));
+
   if (!supabase) {
     return (
       <main className="min-h-screen bg-background px-4 py-8 text-heading sm:px-6 lg:px-8">
@@ -215,6 +251,85 @@ export default function AdminPage() {
               Create
             </button>
           </form>
+        </section>
+
+        {/* Manage Members */}
+        <section className="mb-8 rounded-2xl border border-border-subtle bg-surface p-5">
+          <h2 className="text-lg font-semibold mb-4">Manage Members</h2>
+
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <input
+              type="text"
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+              placeholder="Search username…"
+              className="flex-1 min-w-[200px] rounded-xl border border-border-default bg-background px-4 py-2.5 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            />
+            <div className="flex rounded-xl bg-surface-raised p-1">
+              <button
+                type="button"
+                onClick={() => setMembersFilter('all')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${membersFilter === 'all' ? 'bg-cyan-500 text-slate-950' : 'text-muted hover:text-heading'}`}
+              >
+                All ({members.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setMembersFilter('no_group')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${membersFilter === 'no_group' ? 'bg-cyan-500 text-slate-950' : 'text-muted hover:text-heading'}`}
+              >
+                No group ({members.filter(m => !m.group_id).length})
+              </button>
+            </div>
+          </div>
+
+          {filteredMembers.length === 0 ? (
+            <p className="text-sm text-muted">No members match.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-background/60 text-muted">
+                  <tr>
+                    <th className="px-4 py-2 font-medium">Username</th>
+                    <th className="px-4 py-2 font-medium">Role</th>
+                    <th className="px-4 py-2 font-medium">Group</th>
+                    <th className="px-4 py-2 font-medium">Assign to group</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMembers.map((member) => {
+                    const currentGroup = groups.find(g => g.id === member.group_id);
+                    return (
+                      <tr key={member.id} className="border-t border-border-subtle">
+                        <td className="px-4 py-2 font-medium text-heading">{member.username}</td>
+                        <td className="px-4 py-2">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${member.role === 'admin' ? 'bg-amber-500/20 text-amber-300 ring-amber-500/30' : 'bg-surface-raised text-body ring-border-subtle'}`}>
+                            {member.role}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-body">
+                          {currentGroup ? currentGroup.name : <span className="text-muted italic">None</span>}
+                        </td>
+                        <td className="px-4 py-2">
+                          <select
+                            value={member.group_id ?? ''}
+                            onChange={(e) => assignMemberGroup(member.id, e.target.value || null)}
+                            disabled={actionLoading}
+                            className="rounded-lg border border-border-default bg-background px-3 py-1.5 text-xs text-heading disabled:opacity-50"
+                          >
+                            <option value="">No group</option>
+                            {groups.map((g) => (
+                              <option key={g.id} value={g.id}>{g.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         {/* Groups list */}
