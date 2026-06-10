@@ -38,7 +38,10 @@ export function AuthPanel() {
       .select('id, name, code, crest_url')
       .not('external_team_id', 'is', null)
       .order('name')
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('[AuthPanel] teams fetch error:', error);
+        }
         setTeams((data as Team[] | null) ?? []);
       });
   }, []);
@@ -46,7 +49,6 @@ export function AuthPanel() {
   // Validate signup token and get group info
   useEffect(() => {
     if (!signupToken || !supabase) return;
-
     supabase
       .from('group_signup_tokens')
       .select('group_id, groups(name)')
@@ -68,14 +70,14 @@ export function AuthPanel() {
     ? teams.filter(t => t.name.toLowerCase().includes(teamSearch.toLowerCase()) || (t.code?.toLowerCase().includes(teamSearch.toLowerCase())))
     : teams;
 
+  const selectedTeam = selectedTeamId ? teams.find(t => t.id === selectedTeamId) : null;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
     if (!isSupabaseReady) {
       setMessage('Auth is unavailable until Supabase env vars are configured.');
       return;
     }
-
     setMessage(null);
     setLoading(true);
 
@@ -84,45 +86,26 @@ export function AuthPanel() {
         const { data, error } = await supabase!.auth.signUp({
           email,
           password,
-          options: {
-            data: {
-              username: username.trim(),
-              ...(groupId ? { group_id: groupId } : {}),
-            },
-          },
+          options: { data: { username: username.trim(), ...(groupId ? { group_id: groupId } : {}) } },
         });
         if (error) throw error;
 
         if (data.session) {
           const userId = data.user!.id;
-
-          // Assign group if via signup token
           if (groupId) {
             await supabase!.from('users_profile').update({ group_id: groupId }).eq('id', userId);
           }
-
-          // Save supported team to avatar profile
           if (selectedTeamId) {
             await supabase!.from('user_avatar_profiles').update({ supported_team_id: selectedTeamId }).eq('user_id', userId);
           }
-
           router.push('/');
           return;
         }
-
         setMessage('Signup successful. Check your email if confirmation is enabled.');
       } else {
         const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
-        if (error) {
-          setMessage(error.message);
-          setLoading(false);
-          return;
-        }
-        if (!data.session) {
-          setMessage('No session returned. Your email may need confirmation. Check your inbox, then try again.');
-          setLoading(false);
-          return;
-        }
+        if (error) { setMessage(error.message); setLoading(false); return; }
+        if (!data.session) { setMessage('No session returned. Check your inbox, then try again.'); setLoading(false); return; }
         router.push('/');
       }
     } catch (err) {
@@ -149,179 +132,82 @@ export function AuthPanel() {
       )}
 
       {signupToken && !groupName && message && (
-        <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-          {message}
-        </div>
+        <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{message}</div>
       )}
 
       {/* Tab switcher */}
       <div className="mb-6 flex rounded-xl bg-surface-raised p-1">
         <button
-          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
-            mode === 'login' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'
-          }`}
+          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${mode === 'login' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'}`}
           onClick={() => { setMode('login'); setMessage(null); }}
           type="button"
-        >
-          Log in
-        </button>
+        >Log in</button>
         <button
-          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
-            mode === 'signup' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'
-          }`}
+          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${mode === 'signup' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'}`}
           onClick={() => { setMode('signup'); setMessage(null); }}
           type="button"
-        >
-          Sign up
-        </button>
+        >Sign up</button>
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         {mode === 'signup' && (
           <div>
-            <label htmlFor="auth-username" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-              Username
-            </label>
-            <input
-              id="auth-username"
-              className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-              placeholder="Your display name"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
+            <label htmlFor="auth-username" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">Username</label>
+            <input id="auth-username" className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="Your display name" value={username} onChange={(e) => setUsername(e.target.value)} required />
           </div>
         )}
 
         <div>
-          <label htmlFor="auth-email" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-            Email
-          </label>
-          <input
-            id="auth-email"
-            className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-            placeholder="you@example.com"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+          <label htmlFor="auth-email" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">Email</label>
+          <input id="auth-email" className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="you@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
 
         <div>
-          <label htmlFor="auth-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-            Password
-          </label>
-          <input
-            id="auth-password"
-            className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-            placeholder="••••••••"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <label htmlFor="auth-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">Password</label>
+          <input id="auth-password" className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="••••••••" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
 
         {/* Team picker — signup only */}
-        {mode === 'signup' && teams.length > 0 && (
+        {mode === 'signup' && (
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">
               Your team <span className="font-normal normal-case">(optional)</span>
             </label>
             <p className="mb-2 text-xs text-faint">Pick your favorite team. Their crest will appear on your leaderboard avatar.</p>
 
-            {/* Selected team display */}
-            {selectedTeamId && (
+            {selectedTeam ? (
               <div className="mb-2 flex items-center gap-2 rounded-xl border border-cyan-400/40 bg-cyan-500/10 px-3 py-2">
-                {teams.find(t => t.id === selectedTeamId)?.crest_url && (
-                  <Image
-                    src={teams.find(t => t.id === selectedTeamId)!.crest_url!}
-                    alt=""
-                    width={20}
-                    height={20}
-                    className="object-contain"
-                    unoptimized
-                  />
-                )}
-                <span className="text-sm font-medium text-heading">{teams.find(t => t.id === selectedTeamId)?.name}</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTeamId(null)}
-                  className="ml-auto text-xs text-muted hover:text-heading"
-                >
-                  ✕
-                </button>
+                {selectedTeam.crest_url && <Image src={selectedTeam.crest_url} alt="" width={20} height={20} className="object-contain" unoptimized />}
+                <span className="text-sm font-medium text-heading">{selectedTeam.name}</span>
+                <button type="button" onClick={() => setSelectedTeamId(null)} className="ml-auto text-xs text-muted hover:text-heading">✕</button>
               </div>
-            )}
-
-            {/* Search + grid */}
-            {!selectedTeamId && (
+            ) : (
               <>
-                <input
-                  className="mb-2 w-full rounded-xl border border-border-default bg-background px-4 py-2.5 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Search teams…"
-                  value={teamSearch}
-                  onChange={(e) => setTeamSearch(e.target.value)}
-                />
+                <input className="mb-2 w-full rounded-xl border border-border-default bg-background px-4 py-2.5 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="Search teams…" value={teamSearch} onChange={(e) => setTeamSearch(e.target.value)} />
                 <div className="grid max-h-40 gap-1.5 overflow-y-auto rounded-xl border border-border-subtle bg-background p-2 md:grid-cols-2">
                   {filteredTeams.map((team) => (
-                    <button
-                      key={team.id}
-                      type="button"
-                      onClick={() => { setSelectedTeamId(team.id); setTeamSearch(''); }}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-surface-raised"
-                    >
-                      {team.crest_url && (
-                        <Image src={team.crest_url} alt="" width={18} height={18} className="object-contain" unoptimized />
-                      )}
+                    <button key={team.id} type="button" onClick={() => { setSelectedTeamId(team.id); setTeamSearch(''); }} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-surface-raised">
+                      {team.crest_url && <Image src={team.crest_url} alt="" width={18} height={18} className="object-contain" unoptimized />}
                       <span className="truncate text-heading">{team.name}</span>
                     </button>
                   ))}
-                  {filteredTeams.length === 0 && (
-                    <p className="px-3 py-2 text-xs text-muted">No teams match.</p>
-                  )}
+                  {filteredTeams.length === 0 && <p className="px-3 py-2 text-xs text-muted">No teams match.</p>}
                 </div>
               </>
             )}
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading || !isSupabaseReady || (!!signupToken && !groupName)}
-          className="w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {!isSupabaseReady
-            ? 'Unavailable'
-            : loading
-              ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
-                  Please wait…
-                </span>
-              )
-              : mode === 'login'
-                ? 'Log in'
-                : 'Create account'}
+        <button type="submit" disabled={loading || !isSupabaseReady || (!!signupToken && !groupName)} className="w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50">
+          {!isSupabaseReady ? 'Unavailable' : loading ? <span className="inline-flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />Please wait…</span> : mode === 'login' ? 'Log in' : 'Create account'}
         </button>
       </form>
 
-      {message && !signupToken && (
-        <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-          {message}
-        </div>
-      )}
+      {message && !signupToken && <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{message}</div>}
 
-      {mode === 'signup' && !signupToken && (
-        <p className="mt-4 text-center text-xs text-muted">
-          By signing up you agree to compete fairly on the leaderboard.
-        </p>
-      )}
+      {mode === 'signup' && !signupToken && <p className="mt-4 text-center text-xs text-muted">By signing up you agree to compete fairly on the leaderboard.</p>}
 
-      <p className="mt-5 text-center text-[10px] leading-relaxed text-faint">
-        This app is an unofficial fan project and is not affiliated with, endorsed by, or associated with FIFA.
-      </p>
+      <p className="mt-5 text-center text-[10px] leading-relaxed text-faint">This app is an unofficial fan project and is not affiliated with, endorsed by, or associated with FIFA.</p>
     </div>
   );
 }
