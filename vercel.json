@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/ml-refresh",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/fetch-news",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

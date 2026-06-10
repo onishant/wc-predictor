@@ -29,12 +29,24 @@ type Prediction = {
   pred_away_score: number;
 };
 
+type NewsArticle = {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  image_url: string | null;
+  summary: string | null;
+  published_at: string | null;
+  matched_teams: string[];
+};
+
 export default function HomePage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [predictionMatchId, setPredictionMatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [news, setNews] = useState<NewsArticle[]>([]);
 
   const loadData = useCallback(async () => {
     if (!supabase) return;
@@ -118,6 +130,14 @@ export default function HomePage() {
         setPredictions(map);
       }
     }
+
+    // Fetch news
+    const { data: newsData } = await supabase
+      .from('news')
+      .select('id, title, url, source, image_url, summary, published_at, matched_teams')
+      .order('published_at', { ascending: false })
+      .limit(10);
+    if (newsData) setNews((newsData as NewsArticle[] | null) ?? []);
 
     setLoading(false);
   }, []);
@@ -211,12 +231,47 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* News placeholder */}
+        {/* News */}
         <section className="mt-8">
           <h2 className="text-xl font-semibold mb-4">Latest news</h2>
-          <div className="rounded-2xl border border-border-subtle bg-surface/40 p-8 text-center">
-            <p className="text-sm text-muted">News feed coming soon.</p>
-          </div>
+          {news.length === 0 ? (
+            <div className="rounded-2xl border border-border-subtle bg-surface/40 p-8 text-center">
+              <p className="text-sm text-muted">No news yet. Articles about teams in upcoming matches will appear here.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {news.map((article) => (
+                <a
+                  key={article.id}
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-2xl border border-border-subtle bg-surface/60 p-4 transition hover:border-cyan-500/30 hover:bg-surface-raised/50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-heading group-hover:text-cyan-300 line-clamp-2">{article.title}</h3>
+                    {article.image_url && (
+                      <img src={article.image_url} alt="" className="h-16 w-16 flex-shrink-0 rounded-lg object-cover" />
+                    )}
+                  </div>
+                  {article.summary && (
+                    <p className="mt-2 text-xs text-muted line-clamp-2">{article.summary}</p>
+                  )}
+                  <div className="mt-2 flex items-center gap-2 text-xs text-faint">
+                    <span className="font-medium text-cyan-400/70">{article.source}</span>
+                    {article.published_at && (
+                      <>
+                        <span>·</span>
+                        <time dateTime={article.published_at}>
+                          {new Date(article.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        </time>
+                      </>
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
