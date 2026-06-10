@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Image from 'next/image';
 import { AuthPanel } from '@/components/auth/auth-panel';
 
 export default function AuthPage() {
@@ -22,8 +23,15 @@ export default function AuthPage() {
       <div className="relative z-10 flex w-full max-w-4xl flex-col items-center gap-8 lg:flex-row lg:gap-16">
         {/* Hero section */}
         <div className="flex-1 text-center lg:text-left">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-1.5">
-            <span className="text-lg">🏆</span>
+          <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-4 py-2">
+            <Image
+              src="/images/wc2026-emblem.png"
+              alt="FIFA World Cup 2026"
+              width={36}
+              height={36}
+              className="h-9 w-9"
+              priority
+            />
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">FIFA World Cup 2026</span>
           </div>
 
