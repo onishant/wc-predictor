@@ -5,6 +5,18 @@
       "schedule": "0 4 * * *"
     },
     {
+      "path": "/api/cron/sync-matches-1",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/sync-matches-2",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/sync-matches-3",
+      "schedule": "0 22 * * *"
+    },
+    {
       "path": "/api/cron/ml-refresh",
       "schedule": "0 3 * * *"
     },
