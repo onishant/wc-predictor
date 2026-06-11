@@ -20,7 +20,10 @@ export function AuthPanel() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [mode, setMode] = useState<'login' | 'signup'>(signupToken ? 'signup' : 'login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset_password'>(
+    searchParams.get('type') === 'recovery' ? 'reset_password' : signupToken ? 'signup' : 'login'
+  );
+  const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [groupName, setGroupName] = useState<string | null>(null);
@@ -64,6 +67,21 @@ export function AuthPanel() {
         setGroupName(Array.isArray(g) ? g[0]?.name : g?.name ?? null);
       });
   }, [signupToken]);
+
+  // Handle password recovery token
+  useEffect(() => {
+    if (!supabase || mode !== 'reset_password') return;
+
+    // Check URL hash for access_token (Supabase default)
+    const hash = window.location.hash.substring(1);
+    const hashParams = new URLSearchParams(hash);
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    }
+  }, [mode]);
 
   const filteredTeams = teamSearch
     ? teams.filter(t => t.name.toLowerCase().includes(teamSearch.toLowerCase()) || (t.code?.toLowerCase().includes(teamSearch.toLowerCase())))
@@ -126,6 +144,22 @@ export function AuthPanel() {
     }
   }
 
+  async function handlePasswordUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase || !newPassword) return;
+    setLoading(true);
+    setMessage(null);
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage('Password updated! Redirecting…');
+      setTimeout(() => router.push('/'), 1500);
+    }
+    setLoading(false);
+  }
+
   return (
     <div>
       {!isSupabaseReady && (
@@ -146,20 +180,50 @@ export function AuthPanel() {
         <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{message}</div>
       )}
 
-      {/* Tab switcher */}
-      <div className="mb-6 flex rounded-xl bg-surface-raised p-1">
-        <button
-          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${mode === 'login' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'}`}
-          onClick={() => { setMode('login'); setMessage(null); }}
-          type="button"
-        >Log in</button>
-        <button
-          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${mode === 'signup' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'}`}
-          onClick={() => { setMode('signup'); setMessage(null); }}
-          type="button"
-        >Sign up</button>
-      </div>
+      {/* Tab switcher — hidden during password reset */}
+      {mode !== 'reset_password' && (
+        <div className="mb-6 flex rounded-xl bg-surface-raised p-1">
+          <button
+            className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${mode === 'login' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'}`}
+            onClick={() => { setMode('login'); setMessage(null); }}
+            type="button"
+          >Log in</button>
+          <button
+            className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${mode === 'signup' ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'text-muted hover:text-heading'}`}
+            onClick={() => { setMode('signup'); setMessage(null); }}
+            type="button"
+          >Sign up</button>
+        </div>
+      )}
 
+      {/* Reset password form */}
+      {mode === 'reset_password' && (
+        <form className="space-y-4" onSubmit={handlePasswordUpdate}>
+          <div>
+            <label htmlFor="new-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">New password</label>
+            <input
+              id="new-password"
+              className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              placeholder="••••••••"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              minLength={6}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || !isSupabaseReady}
+            className="w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? 'Updating…' : 'Set new password'}
+          </button>
+        </form>
+      )}
+
+      {/* Login / Signup form */}
+      {mode !== 'reset_password' && (
       <form className="space-y-4" onSubmit={handleSubmit}>
         {mode === 'signup' && (
           <div>
@@ -227,6 +291,7 @@ export function AuthPanel() {
           {!isSupabaseReady ? 'Unavailable' : loading ? <span className="inline-flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />Please wait…</span> : mode === 'login' ? 'Log in' : 'Create account'}
         </button>
       </form>
+      )}
 
       {message && !signupToken && <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{message}</div>}
 
