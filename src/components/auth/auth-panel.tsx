@@ -176,6 +176,20 @@ export function AuthPanel() {
         <div>
           <label htmlFor="auth-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted">Password</label>
           <input id="auth-password" className="w-full rounded-xl border border-border-default bg-background px-4 py-3 text-sm text-heading placeholder:text-faint focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="••••••••" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          {mode === 'login' && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!email) { setMessage('Enter your email above first.'); return; }
+                if (!supabase) return;
+                const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth` });
+                setMessage(error ? error.message : 'Password reset email sent. Check your inbox.');
+              }}
+              className="mt-1.5 text-xs text-cyan-400 hover:text-cyan-300"
+            >
+              Forgot password?
+            </button>
+          )}
         </div>
 
         {/* Team picker — signup only */}
