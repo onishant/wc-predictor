@@ -287,9 +287,16 @@ async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatc
 
 function scorePrediction(prediction: PredictionSettlementRow, homeScore: number, awayScore: number) {
   const actualResult = getResult(homeScore, awayScore);
-  if (prediction.pred_home_score === homeScore && prediction.pred_away_score === awayScore) return 5;
-  if (prediction.predicted_result === actualResult) return 3;
-  return 0;
+  let points = 0;
+
+  // 10 points for correct result (home/draw/away)
+  if (prediction.predicted_result === actualResult) points += 10;
+
+  // 5 points for each team's score correct
+  if (prediction.pred_home_score === homeScore) points += 5;
+  if (prediction.pred_away_score === awayScore) points += 5;
+
+  return points;
 }
 
 function getResult(homeScore: number, awayScore: number) {
