@@ -175,7 +175,7 @@ export async function syncWorldCup() {
       status: normalizeStatus(match.status),
       home_score: match.score?.fullTime?.home ?? null,
       away_score: match.score?.fullTime?.away ?? null,
-      settled_at: match.status === 'FINISHED' ? syncedAt : null,
+      settled_at: match.status === 'FINISHED' && match.score?.fullTime?.home != null && match.score?.fullTime?.away != null ? syncedAt : null,
       source_updated_at: syncedAt,
     }];
   });
