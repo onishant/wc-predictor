@@ -2,27 +2,27 @@
   "crons": [
     {
       "path": "/api/cron/sync-world-cup",
-      "schedule": "0 4 * * *"
+      "schedule": "30 4 * * *"
     },
     {
       "path": "/api/cron/sync-matches-1",
-      "schedule": "0 10 * * *"
+      "schedule": "30 10 * * *"
     },
     {
       "path": "/api/cron/sync-matches-2",
-      "schedule": "0 16 * * *"
+      "schedule": "30 16 * * *"
     },
     {
       "path": "/api/cron/sync-matches-3",
-      "schedule": "0 22 * * *"
+      "schedule": "30 22 * * *"
     },
     {
       "path": "/api/cron/ml-refresh",
-      "schedule": "0 3 * * *"
+      "schedule": "30 3 * * *"
     },
     {
       "path": "/api/cron/fetch-news",
-      "schedule": "0 5 * * *"
+      "schedule": "30 5 * * *"
     }
   ]
 }
