@@ -24,9 +24,9 @@ export default async function FixturesPage() {
         <AppNav />
         <header className="rounded-[28px] border border-border-subtle bg-surface-overlay p-6 shadow-2xl backdrop-blur">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">World Cup fixtures</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-heading sm:text-4xl">Pick a venue, then predict.</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-heading sm:text-4xl">All matches, day by day.</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-            Select a host city from the map or the venue cards below. Fixtures for that venue appear on the right — tap any match to make your prediction.
+            Browse every fixture by date, or switch to the venue view to explore by stadium. Tap any match to predict.
           </p>
         </header>
 

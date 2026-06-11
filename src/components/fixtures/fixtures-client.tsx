@@ -26,7 +26,7 @@ type Props = {
 type ViewMode = 'stadium' | 'date';
 
 export function FixturesClient({ venues, matches, userId, teamStats = [], predictions: initialPredictions = {} }: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>('stadium');
+  const [viewMode, setViewMode] = useState<ViewMode>('date');
   const [selectedVenueId, setSelectedVenueId] = useState(venues[0]?.id ?? '');
   const [predictionMatchId, setPredictionMatchId] = useState<string | null>(null);
   const [predictions, setPredictions] = useState(initialPredictions);
