@@ -310,7 +310,7 @@ async function main() {
         status: normalizeStatus(m.status),
         home_score: m.score?.fullTime?.home ?? null,
         away_score: m.score?.fullTime?.away ?? null,
-        settled_at: m.status === 'FINISHED' ? new Date().toISOString() : null,
+        settled_at: m.status === 'FINISHED' && m.score?.fullTime?.home != null && m.score?.fullTime?.away != null ? new Date().toISOString() : null,
         source_updated_at: new Date().toISOString(),
       };
     })
