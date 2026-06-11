@@ -85,7 +85,14 @@ export function AuthPanel() {
         const { data, error } = await supabase!.auth.signUp({
           email,
           password,
-          options: { data: { username: username.trim(), display_name: username.trim(), ...(groupId ? { group_id: groupId } : {}) } },
+          options: {
+            data: {
+              username: username.trim(),
+              display_name: username.trim(),
+              ...(groupId ? { group_id: groupId } : {}),
+              ...(selectedTeamId ? { supported_team_id: selectedTeamId } : {}),
+            },
+          },
         });
         if (error) throw error;
 
@@ -100,7 +107,12 @@ export function AuthPanel() {
           router.push('/');
           return;
         }
-        setMessage('Signup successful. Check your email if confirmation is enabled.');
+
+        // Email confirmation required — group and team will be assigned on first login
+        const pendingMsg = groupId
+          ? `Check your email to confirm your account. You'll be assigned to your group after confirmation.`
+          : 'Check your email to confirm your account.';
+        setMessage(pendingMsg);
       } else {
         const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) { setMessage(error.message); setLoading(false); return; }

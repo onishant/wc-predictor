@@ -1,4 +1,5 @@
 -- Updated trigger: reads group_id and supported_team_id from auth metadata
+-- This ensures group/team are assigned even when email confirmation is enabled
 
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS TRIGGER
