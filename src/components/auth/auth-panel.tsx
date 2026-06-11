@@ -21,7 +21,9 @@ export function AuthPanel() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [mode, setMode] = useState<'login' | 'signup' | 'reset_password'>(
-    searchParams.get('type') === 'recovery' ? 'reset_password' : signupToken ? 'signup' : 'login'
+    typeof window !== 'undefined' && window.location.hash.includes('type=recovery')
+      ? 'reset_password'
+      : signupToken ? 'signup' : 'login'
   );
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
