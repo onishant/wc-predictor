@@ -258,7 +258,7 @@ async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatc
 
     for (const prediction of sortedPredictions) {
       points += prediction.points_awarded;
-      if (prediction.points_awarded > 0) {
+      if (prediction.points_awarded >= 10) {
         currentStreak += 1;
         bestStreak = Math.max(bestStreak, currentStreak);
       } else {

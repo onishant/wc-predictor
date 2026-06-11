@@ -25,7 +25,7 @@ select
     select count(*) from predictions
     where predictions.user_id = up.user_id
     and settled_at is not null
-    and points_awarded > 0
+    and points_awarded >= 10
   ), 0) as correct_count
 from user_progress up
 left join users_profile p on p.id = up.user_id
