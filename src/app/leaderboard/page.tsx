@@ -127,6 +127,12 @@ export default function LeaderboardPage() {
               <Link href="/fixtures" className="rounded-full border border-border-default px-4 py-2 text-sm font-medium hover:bg-surface-raised">Fixtures</Link>
             </div>
           </div>
+          {/* Scoring criteria */}
+          <div className="mt-4 flex flex-wrap gap-3 text-xs">
+            <span className="rounded-full bg-emerald-500/15 px-3 py-1 font-semibold text-emerald-300">Exact score: 20 pts</span>
+            <span className="rounded-full bg-cyan-500/15 px-3 py-1 font-semibold text-cyan-300">Correct result: 10 pts</span>
+            <span className="rounded-full bg-purple-500/15 px-3 py-1 font-semibold text-purple-300">Team goals correct: 5 pts each</span>
+          </div>
         </header>
 
         {userId && userOverallRank > 0 && (

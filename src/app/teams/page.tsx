@@ -30,7 +30,7 @@ export default async function TeamsPage() {
           {profiles.map((team) => {
             const stats = statsByTeam.get(team.id);
             return (
-              <Link key={team.id} href={`/teams/${team.id}`} className="rounded-2xl border border-border-subtle bg-surface/70 p-5 transition hover:border-cyan-700 hover:bg-surface">
+              <Link key={team.id} href={`/teams/${team.id}`} className="group rounded-2xl border border-border-subtle bg-surface/70 p-5 transition hover:border-cyan-700 hover:bg-surface">
                 <TeamBadge
                   team={{
                     name: team.name,
@@ -51,6 +51,7 @@ export default async function TeamsPage() {
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-faint">World Cup form</p>
                   <FormStrip form={stats?.recentForm ?? []} />
                 </div>
+                <p className="mt-3 text-xs font-semibold text-cyan-400 transition group-hover:text-cyan-300">Tap to explore →</p>
               </Link>
             );
           })}
