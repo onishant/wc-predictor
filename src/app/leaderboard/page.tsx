@@ -85,10 +85,15 @@ export default function LeaderboardPage() {
       if (fetchError) {
         setError(fetchError.message);
       } else {
+        // Accuracy helper
+        const accuracy = (r: LeaderboardRow) =>
+          r.settled_count > 0 ? r.correct_count / r.settled_count : 0;
+
         const sorted = ((data ?? []) as LeaderboardRow[]).sort((a, b) => {
           if (b.points !== a.points) return b.points - a.points;
-          if (b.current_streak !== a.current_streak) return b.current_streak - a.current_streak;
+          if (accuracy(b) !== accuracy(a)) return accuracy(b) - accuracy(a);
           if (b.best_streak !== a.best_streak) return b.best_streak - a.best_streak;
+          if (b.current_streak !== a.current_streak) return b.current_streak - a.current_streak;
           return (a.username ?? '').localeCompare(b.username ?? '');
         });
 
@@ -103,8 +108,9 @@ export default function LeaderboardPage() {
           const prev = ranked[i - 1];
           const tied =
             row.points === prev.points &&
-            row.current_streak === prev.current_streak &&
-            row.best_streak === prev.best_streak;
+            accuracy(row) === accuracy(prev) &&
+            row.best_streak === prev.best_streak &&
+            row.current_streak === prev.current_streak;
           ranked.push({ ...row, rank: tied ? prev.rank : i + 1 });
         }
 
@@ -120,6 +126,8 @@ export default function LeaderboardPage() {
     if (tab !== 'group' || !userGroupId) return allRows;
     const filtered = allRows.filter(r => r.group_id === userGroupId);
     // Re-rank within group using same standard competition ranking
+    const acc = (r: LeaderboardRow) =>
+      r.settled_count > 0 ? r.correct_count / r.settled_count : 0;
     const reranked: (LeaderboardRow & { rank: number })[] = [];
     for (let i = 0; i < filtered.length; i++) {
       const row = filtered[i];
@@ -130,8 +138,9 @@ export default function LeaderboardPage() {
       const prev = reranked[i - 1];
       const tied =
         row.points === prev.points &&
-        row.current_streak === prev.current_streak &&
-        row.best_streak === prev.best_streak;
+        acc(row) === acc(prev) &&
+        row.best_streak === prev.best_streak &&
+        row.current_streak === prev.current_streak;
       reranked.push({ ...row, rank: tied ? prev.rank : i + 1 });
     }
     return reranked;
