@@ -58,14 +58,22 @@ export default function LeaderboardPage() {
       if (uid) {
         const { data: profile } = await supabase!
           .from('users_profile')
-          .select('group_id, groups(name)')
+          .select('group_id')
           .eq('id', uid)
           .single();
         const gid = (profile as unknown as { group_id: string | null })?.group_id ?? null;
         setUserGroupId(gid);
-        const rawGroups = (profile as unknown as { groups: { name: string }[] | null })?.groups;
-        const groupName = Array.isArray(rawGroups) ? rawGroups[0]?.name : null;
-        setUserGroupName(groupName ?? null);
+
+        // Fetch group name separately (avoids join issues)
+        if (gid) {
+          const { data: group } = await supabase!
+            .from('groups')
+            .select('name')
+            .eq('id', gid)
+            .single();
+          setUserGroupName((group as unknown as { name: string | null })?.name ?? null);
+        }
+
         if (!gid) setTab('overall');
       }
 
