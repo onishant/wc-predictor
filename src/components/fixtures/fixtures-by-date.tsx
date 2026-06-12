@@ -159,9 +159,16 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                           {/* Time */}
                           <div className="flex w-12 flex-shrink-0 flex-col items-center">
                             <span className="text-sm font-semibold tabular-nums text-heading">{time}</span>
-                            <span className={`mt-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${statusColor}`}>
-                              {match.status === 'TIMED' || match.status === 'SCHEDULED' ? 'Upcoming' : match.status}
-                            </span>
+                            {(match.status === 'IN_PLAY' || match.status === 'PAUSED') ? (
+                              <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-red-500/40 bg-red-500/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-400">
+                                <span className="h-1 w-1 animate-pulse rounded-full bg-red-400" />
+                                Live
+                              </span>
+                            ) : (
+                              <span className={`mt-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${statusColor}`}>
+                                {match.status === 'TIMED' || match.status === 'SCHEDULED' ? 'Upcoming' : match.status}
+                              </span>
+                            )}
                           </div>
 
                           {/* Teams */}
