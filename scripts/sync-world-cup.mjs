@@ -295,22 +295,37 @@ async function main() {
     if (playersErr) throw playersErr;
   }
 
+  // Fetch existing matches to preserve manually-set scores when API returns null
+  const { data: existingMatches } = await supabase
+    .from('matches')
+    .select('external_match_id, home_score, away_score');
+  const existingScores = new Map((existingMatches ?? []).map(m => [m.external_match_id, m]));
+
   const matchRows = matches
     .map((m) => {
       const homeId = teamIdByExt.get(String(m.homeTeam?.id));
       const awayId = teamIdByExt.get(String(m.awayTeam?.id));
       if (!homeId || !awayId) return null;
 
+      const extId = String(m.id);
+      const apiHome = m.score?.fullTime?.home ?? null;
+      const apiAway = m.score?.fullTime?.away ?? null;
+      const existing = existingScores.get(extId);
+
+      // Use API scores if available, otherwise preserve existing DB scores
+      const homeScore = apiHome != null ? apiHome : (existing?.home_score ?? null);
+      const awayScore = apiAway != null ? apiAway : (existing?.away_score ?? null);
+
       return {
-        external_match_id: String(m.id),
+        external_match_id: extId,
         stage: m.stage ?? m.group ?? null,
         home_team_id: homeId,
         away_team_id: awayId,
         kickoff_utc: m.utcDate,
         status: normalizeStatus(m.status),
-        home_score: m.score?.fullTime?.home ?? null,
-        away_score: m.score?.fullTime?.away ?? null,
-        settled_at: m.status === 'FINISHED' && m.score?.fullTime?.home != null && m.score?.fullTime?.away != null ? new Date().toISOString() : null,
+        home_score: homeScore,
+        away_score: awayScore,
+        settled_at: m.status === 'FINISHED' && homeScore != null && awayScore != null ? new Date().toISOString() : null,
         source_updated_at: new Date().toISOString(),
       };
     })
@@ -323,6 +338,115 @@ async function main() {
   if (upsertErr) throw upsertErr;
 
   console.log(`Synced ${teamRows.length} teams, ${playerRows.length} players, and ${matchRows.length} matches into Supabase.`);
+
+  // Settle predictions for finished matches with scores
+  const settledCount = await settleFinishedMatchPredictions(supabase, syncedAt);
+  if (settledCount > 0) {
+    console.log(`Settled ${settledCount} predictions.`);
+  }
+}
+
+function scorePrediction(prediction, homeScore, awayScore) {
+  const actualResult = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw';
+  let points = 0;
+  if (prediction.predicted_result === actualResult) points += 10;
+  if (prediction.pred_home_score === homeScore) points += 5;
+  if (prediction.pred_away_score === awayScore) points += 5;
+  return points;
+}
+
+async function settleFinishedMatchPredictions(supabase, settledAt) {
+  const { data: finishedMatches, error: matchesError } = await supabase
+    .from('matches')
+    .select('external_match_id, kickoff_utc, status, home_score, away_score')
+    .eq('status', 'finished')
+    .not('external_match_id', 'is', null)
+    .not('home_score', 'is', null)
+    .not('away_score', 'is', null);
+  if (matchesError) throw matchesError;
+
+  const matchesByExternalId = new Map((finishedMatches ?? []).map(m => [m.external_match_id, m]));
+  const finishedExternalIds = [...matchesByExternalId.keys()];
+  if (finishedExternalIds.length === 0) return 0;
+
+  const { data: unsettledPredictions, error: predictionsError } = await supabase
+    .from('predictions')
+    .select('id, user_id, match_external_id, predicted_result, pred_home_score, pred_away_score, points_awarded')
+    .is('settled_at', null)
+    .in('match_external_id', finishedExternalIds);
+  if (predictionsError) throw predictionsError;
+
+  for (const prediction of unsettledPredictions ?? []) {
+    const match = matchesByExternalId.get(prediction.match_external_id);
+    if (!match || match.home_score == null || match.away_score == null) continue;
+
+    const pointsAwarded = scorePrediction(prediction, match.home_score, match.away_score);
+    const { error } = await supabase
+      .from('predictions')
+      .update({ points_awarded: pointsAwarded, settled_at: settledAt, is_locked: true })
+      .eq('id', prediction.id);
+    if (error) throw error;
+  }
+
+  await rebuildUserProgress(supabase, matchesByExternalId);
+
+  return unsettledPredictions?.length ?? 0;
+}
+
+async function rebuildUserProgress(supabase, matchesByExternalId) {
+  const { data: settledPredictions, error } = await supabase
+    .from('predictions')
+    .select('id, user_id, match_external_id, predicted_result, pred_home_score, pred_away_score, points_awarded')
+    .not('settled_at', 'is', null);
+  if (error) throw error;
+
+  const predictionsByUser = new Map();
+  for (const prediction of settledPredictions ?? []) {
+    const userPredictions = predictionsByUser.get(prediction.user_id) ?? [];
+    userPredictions.push(prediction);
+    predictionsByUser.set(prediction.user_id, userPredictions);
+  }
+
+  const progressRows = [...predictionsByUser.entries()].map(([userId, predictions]) => {
+    const sorted = predictions.sort((a, b) => {
+      const aMatch = matchesByExternalId.get(a.match_external_id);
+      const bMatch = matchesByExternalId.get(b.match_external_id);
+      return (aMatch?.kickoff_utc ?? '').localeCompare(bMatch?.kickoff_utc ?? '');
+    });
+
+    let points = 0;
+    let currentStreak = 0;
+    let bestStreak = 0;
+
+    for (const prediction of sorted) {
+      points += prediction.points_awarded;
+      if (prediction.points_awarded >= 10) {
+        currentStreak += 1;
+        bestStreak = Math.max(bestStreak, currentStreak);
+      } else {
+        currentStreak = 0;
+      }
+    }
+
+    const characterTier = points >= 100 ? 'Legend' : points >= 50 ? 'Elite' : points >= 20 ? 'Pro' : 'Rookie';
+
+    return {
+      user_id: userId,
+      points,
+      xp: points * 10,
+      current_streak: currentStreak,
+      best_streak: bestStreak,
+      character_tier: characterTier,
+      updated_at: new Date().toISOString(),
+    };
+  });
+
+  if (progressRows.length === 0) return;
+
+  const { error: upsertError } = await supabase
+    .from('user_progress')
+    .upsert(progressRows, { onConflict: 'user_id' });
+  if (upsertError) throw upsertError;
 }
 
 main().catch((err) => {

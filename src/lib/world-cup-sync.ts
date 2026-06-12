@@ -341,3 +341,111 @@ function normalizeStatus(status: string) {
   if (['POSTPONED', 'SUSPENDED', 'CANCELLED'].includes(status)) return 'postponed';
   return 'scheduled';
 }
+
+/**
+ * Lightweight live-scores sync: fetches only in-progress and recently finished
+ * matches, updates scores in Supabase, and settles predictions for newly
+ * finished matches. Skips teams/players sync.
+ */
+export async function syncLiveScores() {
+  if (!hasSupabaseServiceRole) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY.');
+  }
+
+  const apiKey = process.env.FOOTBALL_DATA_API_KEY;
+  if (!apiKey) throw new Error('Missing FOOTBALL_DATA_API_KEY.');
+
+  const url = new URL(`${FOOTBALL_DATA_BASE_URL}/competitions/WC/matches`);
+  url.searchParams.set('status', 'LIVE,IN_PLAY,PAUSED,FINISHED');
+
+  const response = await fetch(url, {
+    headers: { 'X-Auth-Token': apiKey },
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error(`football-data API error (${response.status}): ${await response.text()}`);
+
+  const payload = await response.json() as { matches?: ProviderMatch[] };
+  const liveMatches = payload.matches ?? [];
+
+  if (liveMatches.length === 0) {
+    return { changed: 0, finished: 0, settled: 0 };
+  }
+
+  // Fetch existing match rows for these external IDs to compare scores
+  const externalIds = liveMatches.map((m) => String(m.id));
+  const { data: existingMatches, error: existingError } = await supabaseAdmin
+    .from('matches')
+    .select('external_match_id, home_score, away_score, status')
+    .in('external_match_id', externalIds);
+  if (existingError) throw existingError;
+
+  const existingMap = new Map(
+    (existingMatches ?? []).map((m) => [m.external_match_id as string, m])
+  );
+
+  // Also need team IDs — look them up from existing matches
+  const { data: allMatches, error: allMatchesError } = await supabaseAdmin
+    .from('matches')
+    .select('external_match_id, home_team_id, away_team_id')
+    .in('external_match_id', externalIds);
+  if (allMatchesError) throw allMatchesError;
+
+  const matchTeamMap = new Map(
+    (allMatches ?? []).map((m) => [m.external_match_id as string, m])
+  );
+
+  const syncedAt = new Date().toISOString();
+  let changed = 0;
+  let finished = 0;
+
+  for (const match of liveMatches) {
+    const extId = String(match.id);
+    const existing = existingMap.get(extId);
+    const teamRow = matchTeamMap.get(extId);
+    if (!teamRow) continue; // match not in our DB yet (knockout with no teams)
+
+    const apiHome = match.score?.fullTime?.home ?? null;
+    const apiAway = match.score?.fullTime?.away ?? null;
+    const newStatus = normalizeStatus(match.status);
+
+    // Skip if nothing changed
+    const scoreUnchanged =
+      existing &&
+      existing.home_score === apiHome &&
+      existing.away_score === apiAway &&
+      existing.status === newStatus;
+    if (scoreUnchanged) continue;
+
+    const isFinished =
+      match.status === 'FINISHED' && apiHome != null && apiAway != null;
+    if (isFinished) finished++;
+
+    const { error: upsertError } = await supabaseAdmin
+      .from('matches')
+      .upsert(
+        {
+          external_match_id: extId,
+          home_team_id: teamRow.home_team_id,
+          away_team_id: teamRow.away_team_id,
+          kickoff_utc: match.utcDate,
+          status: newStatus,
+          home_score: apiHome,
+          away_score: apiAway,
+          settled_at: isFinished ? syncedAt : null,
+          source_updated_at: syncedAt,
+        },
+        { onConflict: 'external_match_id' }
+      );
+    if (upsertError) throw upsertError;
+
+    changed++;
+  }
+
+  // Settle predictions if any match just finished
+  let settled = 0;
+  if (finished > 0) {
+    settled = await settleFinishedMatchPredictions(syncedAt);
+  }
+
+  return { changed, finished, settled };
+}
