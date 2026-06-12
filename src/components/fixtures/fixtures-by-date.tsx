@@ -76,6 +76,17 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
 
   const groups = useMemo(() => groupMatchesByDate(matches), [matches]);
 
+  // Find the active group: today's date, or the next upcoming date
+  const activeGroupIndex = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    // Find the group whose date is today or the nearest future date
+    for (let i = 0; i < groups.length; i++) {
+      if (groups[i].dateKey >= today) return i;
+    }
+    // All dates are in the past — highlight the last group
+    return Math.max(0, groups.length - 1);
+  }, [groups]);
+
   const predictionMatch = useMemo(
     () => matches.find((m) => String(m.id) === predictionMatchId) ?? null,
     [matches, predictionMatchId],
@@ -102,8 +113,19 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
 
       {/* Timeline */}
       <div className="relative">
-        {/* Vertical timeline line */}
-        <div className="absolute left-[27px] top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-border-default/40 to-transparent" />
+        {/* Vertical timeline line — glow at active group position */}
+        <div className="absolute left-[27px] top-0 bottom-0 w-px overflow-hidden">
+          <div
+            className="absolute inset-0 bg-border-default/40"
+            style={{
+              background: `linear-gradient(to bottom,
+                transparent ${Math.max(0, (activeGroupIndex / Math.max(1, groups.length)) * 100 - 10)}%,
+                rgba(34,211,238,0.5) ${(activeGroupIndex / Math.max(1, groups.length)) * 100}%,
+                transparent ${Math.min(100, (activeGroupIndex / Math.max(1, groups.length)) * 100 + 15)}%,
+                rgba(148,163,184,0.25) 100%)`,
+            }}
+          />
+        </div>
 
         {groups.map((group, groupIndex) => (
           <div key={group.dateKey} className="relative pb-8 last:pb-0">
@@ -112,7 +134,7 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
               {/* Timeline dot */}
               <div className="relative z-10 flex flex-col items-center">
                 <div className={`flex h-14 w-14 flex-col items-center justify-center rounded-full border-2 text-center ${
-                  groupIndex === 0
+                  groupIndex === activeGroupIndex
                     ? 'border-cyan-400 bg-cyan-400/20 text-cyan-300'
                     : 'border-border-default bg-surface text-muted'
                 }`}>
