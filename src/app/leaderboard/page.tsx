@@ -77,7 +77,29 @@ export default function LeaderboardPage() {
       if (fetchError) {
         setError(fetchError.message);
       } else {
-        const ranked = ((data ?? []) as LeaderboardRow[]).map((row, i) => ({ ...row, rank: i + 1 }));
+        const sorted = ((data ?? []) as LeaderboardRow[]).sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          if (b.current_streak !== a.current_streak) return b.current_streak - a.current_streak;
+          if (b.best_streak !== a.best_streak) return b.best_streak - a.best_streak;
+          return (a.username ?? '').localeCompare(b.username ?? '');
+        });
+
+        // Standard competition ranking: ties share the same rank
+        const ranked: (LeaderboardRow & { rank: number })[] = [];
+        for (let i = 0; i < sorted.length; i++) {
+          const row = sorted[i];
+          if (i === 0) {
+            ranked.push({ ...row, rank: 1 });
+            continue;
+          }
+          const prev = ranked[i - 1];
+          const tied =
+            row.points === prev.points &&
+            row.current_streak === prev.current_streak &&
+            row.best_streak === prev.best_streak;
+          ranked.push({ ...row, rank: tied ? prev.rank : i + 1 });
+        }
+
         setAllRows(ranked);
       }
       setLoading(false);
@@ -86,9 +108,26 @@ export default function LeaderboardPage() {
     load();
   }, []);
 
-  const rows = tab === 'group' && userGroupId
-    ? allRows.filter(r => r.group_id === userGroupId).map((r, i) => ({ ...r, rank: i + 1 }))
-    : allRows;
+  const rows = (() => {
+    if (tab !== 'group' || !userGroupId) return allRows;
+    const filtered = allRows.filter(r => r.group_id === userGroupId);
+    // Re-rank within group using same standard competition ranking
+    const reranked: (LeaderboardRow & { rank: number })[] = [];
+    for (let i = 0; i < filtered.length; i++) {
+      const row = filtered[i];
+      if (i === 0) {
+        reranked.push({ ...row, rank: 1 });
+        continue;
+      }
+      const prev = reranked[i - 1];
+      const tied =
+        row.points === prev.points &&
+        row.current_streak === prev.current_streak &&
+        row.best_streak === prev.best_streak;
+      reranked.push({ ...row, rank: tied ? prev.rank : i + 1 });
+    }
+    return reranked;
+  })();
 
   const userOverallRank = userId ? allRows.findIndex(r => r.user_id === userId) + 1 : 0;
   const userGroupRank = userId && userGroupId
