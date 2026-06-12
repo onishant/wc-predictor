@@ -200,7 +200,18 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                             </div>
 
                             <div className="flex flex-col items-center px-2">
-                              {hasPrediction ? (
+                              {(match.homeScore != null && match.awayScore != null) ? (
+                                <>
+                                  <span className="text-lg font-bold tabular-nums text-heading">
+                                    {match.homeScore} – {match.awayScore}
+                                  </span>
+                                  {hasPrediction && (
+                                    <span className="text-[10px] tabular-nums text-muted">
+                                      Pred: {pred!.pred_home_score} – {pred!.pred_away_score}
+                                    </span>
+                                  )}
+                                </>
+                              ) : hasPrediction ? (
                                 <span className="text-base font-bold tabular-nums text-heading">
                                   {pred!.pred_home_score} – {pred!.pred_away_score}
                                 </span>

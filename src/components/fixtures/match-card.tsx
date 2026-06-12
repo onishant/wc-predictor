@@ -9,6 +9,8 @@ type MatchCardProps = {
   awayTeam: string;
   homeTeamVisual?: TeamVisual;
   awayTeamVisual?: TeamVisual;
+  homeScore?: number | null;
+  awayScore?: number | null;
   kickoffUtc: string;
   stage?: string;
   group?: string;
@@ -59,6 +61,8 @@ export function MatchCard({
   awayTeam,
   homeTeamVisual,
   awayTeamVisual,
+  homeScore,
+  awayScore,
   kickoffUtc,
   stage,
   group,
@@ -107,7 +111,18 @@ export function MatchCard({
         </div>
 
         <div className="flex flex-col items-center px-2">
-          {state === 'predicted' && predictedHomeScore != null && predictedAwayScore != null ? (
+          {(homeScore != null && awayScore != null) ? (
+            <>
+              <span className="text-lg font-bold tabular-nums text-heading">
+                {homeScore} – {awayScore}
+              </span>
+              {state === 'predicted' && predictedHomeScore != null && predictedAwayScore != null && (
+                <span className="text-[10px] tabular-nums text-muted">
+                  Pred: {predictedHomeScore} – {predictedAwayScore}
+                </span>
+              )}
+            </>
+          ) : state === 'predicted' && predictedHomeScore != null && predictedAwayScore != null ? (
             <span className="text-lg font-bold tabular-nums text-heading">
               {predictedHomeScore} – {predictedAwayScore}
             </span>
