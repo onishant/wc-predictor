@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { AppNav } from '@/components/app-nav';
 import { MatchCard } from '@/components/fixtures/match-card';
+import { TeamBadge } from '@/components/fixtures/team-badge';
 import { PredictionPanel } from '@/components/fixtures/prediction-panel';
 import { supabase } from '@/lib/supabase-browser';
 import type { TeamVisual } from '@/lib/team-visuals';
@@ -21,6 +22,8 @@ type Match = {
   status: string;
   home_crest: string | null;
   away_crest: string | null;
+  home_score: number | null;
+  away_score: number | null;
 };
 
 type Prediction = {
@@ -47,6 +50,7 @@ export default function HomePage() {
   const [predictionMatchId, setPredictionMatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [news, setNews] = useState<NewsArticle[]>([]);
+  const [featuredMatch, setFeaturedMatch] = useState<Match | null>(null);
 
   const loadData = useCallback(async () => {
     if (!supabase) return;
@@ -104,9 +108,69 @@ export default function HomePage() {
           status: m.status,
           home_crest: ht?.crest_url ?? null,
           away_crest: at?.crest_url ?? null,
+          home_score: (m as Record<string, unknown>).home_score as number | null ?? null,
+          away_score: (m as Record<string, unknown>).away_score as number | null ?? null,
         };
       });
       setMatches(parsed);
+    }
+
+    // Fetch featured match: live/in-play first, else most recently finished
+    const { data: liveMatch } = await supabase
+      .from('matches')
+      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
+      .in('status', ['in_play', 'paused'])
+      .order('kickoff_utc', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (liveMatch) {
+      const ht = liveMatch.home_team_id ? teamMap.get(liveMatch.home_team_id) : null;
+      const at = liveMatch.away_team_id ? teamMap.get(liveMatch.away_team_id) : null;
+      setFeaturedMatch({
+        id: liveMatch.id,
+        external_match_id: liveMatch.external_match_id,
+        home_team: ht?.name ?? 'TBD',
+        away_team: at?.name ?? 'TBD',
+        home_team_id: liveMatch.home_team_id,
+        away_team_id: liveMatch.away_team_id,
+        kickoff_utc: liveMatch.kickoff_utc,
+        stage: liveMatch.stage,
+        status: liveMatch.status,
+        home_crest: ht?.crest_url ?? null,
+        away_crest: at?.crest_url ?? null,
+        home_score: liveMatch.home_score ?? null,
+        away_score: liveMatch.away_score ?? null,
+      });
+    } else {
+      const { data: finishedMatch } = await supabase
+        .from('matches')
+        .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
+        .eq('status', 'finished')
+        .not('home_score', 'is', null)
+        .order('kickoff_utc', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (finishedMatch) {
+        const ht = finishedMatch.home_team_id ? teamMap.get(finishedMatch.home_team_id) : null;
+        const at = finishedMatch.away_team_id ? teamMap.get(finishedMatch.away_team_id) : null;
+        setFeaturedMatch({
+          id: finishedMatch.id,
+          external_match_id: finishedMatch.external_match_id,
+          home_team: ht?.name ?? 'TBD',
+          away_team: at?.name ?? 'TBD',
+          home_team_id: finishedMatch.home_team_id,
+          away_team_id: finishedMatch.away_team_id,
+          kickoff_utc: finishedMatch.kickoff_utc,
+          stage: finishedMatch.stage,
+          status: finishedMatch.status,
+          home_crest: ht?.crest_url ?? null,
+          away_crest: at?.crest_url ?? null,
+          home_score: finishedMatch.home_score ?? null,
+          away_score: finishedMatch.away_score ?? null,
+        });
+      }
     }
 
     // Get user predictions
@@ -184,6 +248,84 @@ export default function HomePage() {
           </div>
         </header>
 
+        {/* Featured match (live or last finished) */}
+        {featuredMatch && (() => {
+          const pred = predictions[featuredMatch.external_match_id];
+          const isLive = featuredMatch.status === 'in_play' || featuredMatch.status === 'paused';
+          const kickoff = new Date(featuredMatch.kickoff_utc);
+          const timeLabel = kickoff.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ', ' +
+            kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          return (
+            <section className="mt-8">
+              <div className="mb-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-cyan-400">
+                  {isLive ? 'Happening now' : 'Just finished'}
+                </p>
+                <h2 className="text-xl font-semibold">
+                  {isLive ? '🔴 Live match' : 'Latest result'}
+                </h2>
+              </div>
+              <div className="relative overflow-hidden rounded-[20px] border border-border-subtle bg-gradient-to-br from-surface-overlay to-background p-5">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-500 via-purple-500 to-cyan-500" />
+
+                {/* Status row */}
+                <div className="mb-4 flex items-center justify-between">
+                  {isLive ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-400">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+                      Live
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/12 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-400">
+                      ✓ Full Time
+                    </span>
+                  )}
+                  <span className="text-xs text-muted">{timeLabel}</span>
+                </div>
+
+                {/* Teams + score */}
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-1 flex-col items-center gap-2">
+                    <TeamBadge team={{ name: featuredMatch.home_team, crestUrl: featuredMatch.home_crest } as TeamVisual} size="md" />
+                  </div>
+                  <div className="flex min-w-[90px] flex-col items-center gap-1">
+                    {featuredMatch.home_score != null && featuredMatch.away_score != null ? (
+                      <span className="text-3xl font-extrabold tabular-nums tracking-wider text-heading">
+                        {featuredMatch.home_score} – {featuredMatch.away_score}
+                      </span>
+                    ) : (
+                      <span className="text-lg font-semibold text-faint">vs</span>
+                    )}
+                    {pred && (
+                      <span className="text-[11px] tabular-nums text-muted">
+                        Your pred: {pred.pred_home_score} – {pred.pred_away_score}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col items-center gap-2">
+                    <TeamBadge team={{ name: featuredMatch.away_team, crestUrl: featuredMatch.away_crest } as TeamVisual} size="md" />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-4 flex items-center justify-between border-t border-border-subtle/40 pt-3">
+                  <span className="text-[11px] uppercase tracking-[0.1em] text-muted">
+                    {featuredMatch.stage ?? 'Stage TBD'}
+                  </span>
+                  {pred && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Predicted
+                    </span>
+                  )}
+                </div>
+              </div>
+            </section>
+          );
+        })()}
+
         {/* Upcoming matches */}
         <section className="mt-8">
           <div className="mb-4 flex items-end justify-between">
@@ -215,6 +357,8 @@ export default function HomePage() {
                   awayTeam={match.away_team}
                   homeTeamVisual={{ name: match.home_team, crestUrl: match.home_crest } as TeamVisual}
                   awayTeamVisual={{ name: match.away_team, crestUrl: match.away_crest } as TeamVisual}
+                  homeScore={match.home_score}
+                  awayScore={match.away_score}
                   kickoffUtc={match.kickoff_utc}
                   stage={match.stage ?? undefined}
                   group={undefined}
