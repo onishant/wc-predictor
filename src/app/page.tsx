@@ -124,26 +124,8 @@ export default function HomePage() {
       .limit(1)
       .maybeSingle();
 
-    if (liveMatch) {
-      const ht = liveMatch.home_team_id ? teamMap.get(liveMatch.home_team_id) : null;
-      const at = liveMatch.away_team_id ? teamMap.get(liveMatch.away_team_id) : null;
-      setFeaturedMatch({
-        id: liveMatch.id,
-        external_match_id: liveMatch.external_match_id,
-        home_team: ht?.name ?? 'TBD',
-        away_team: at?.name ?? 'TBD',
-        home_team_id: liveMatch.home_team_id,
-        away_team_id: liveMatch.away_team_id,
-        kickoff_utc: liveMatch.kickoff_utc,
-        stage: liveMatch.stage,
-        status: liveMatch.status,
-        home_crest: ht?.crest_url ?? null,
-        away_crest: at?.crest_url ?? null,
-        home_score: liveMatch.home_score ?? null,
-        away_score: liveMatch.away_score ?? null,
-      });
-    } else {
-      const { data: finishedMatch } = await supabase
+    const rawFeatured = liveMatch ?? (await (async () => {
+      const { data } = await supabase
         .from('matches')
         .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
         .eq('status', 'finished')
@@ -151,26 +133,41 @@ export default function HomePage() {
         .order('kickoff_utc', { ascending: false })
         .limit(1)
         .maybeSingle();
+      return data;
+    })());
 
-      if (finishedMatch) {
-        const ht = finishedMatch.home_team_id ? teamMap.get(finishedMatch.home_team_id) : null;
-        const at = finishedMatch.away_team_id ? teamMap.get(finishedMatch.away_team_id) : null;
-        setFeaturedMatch({
-          id: finishedMatch.id,
-          external_match_id: finishedMatch.external_match_id,
-          home_team: ht?.name ?? 'TBD',
-          away_team: at?.name ?? 'TBD',
-          home_team_id: finishedMatch.home_team_id,
-          away_team_id: finishedMatch.away_team_id,
-          kickoff_utc: finishedMatch.kickoff_utc,
-          stage: finishedMatch.stage,
-          status: finishedMatch.status,
-          home_crest: ht?.crest_url ?? null,
-          away_crest: at?.crest_url ?? null,
-          home_score: finishedMatch.home_score ?? null,
-          away_score: finishedMatch.away_score ?? null,
-        });
+    if (rawFeatured) {
+      // Ensure featured match teams are in teamMap
+      const extraTeamIds = [rawFeatured.home_team_id, rawFeatured.away_team_id].filter(
+        (id): id is string => !!id && !teamMap.has(id),
+      );
+      if (extraTeamIds.length > 0) {
+        const { data: extraTeams } = await supabase
+          .from('teams')
+          .select('id, name, crest_url')
+          .in('id', extraTeamIds);
+        for (const t of extraTeams ?? []) {
+          teamMap.set(t.id, { name: t.name, crest_url: t.crest_url });
+        }
       }
+
+      const ht = rawFeatured.home_team_id ? teamMap.get(rawFeatured.home_team_id) : null;
+      const at = rawFeatured.away_team_id ? teamMap.get(rawFeatured.away_team_id) : null;
+      setFeaturedMatch({
+        id: rawFeatured.id,
+        external_match_id: rawFeatured.external_match_id,
+        home_team: ht?.name ?? 'TBD',
+        away_team: at?.name ?? 'TBD',
+        home_team_id: rawFeatured.home_team_id,
+        away_team_id: rawFeatured.away_team_id,
+        kickoff_utc: rawFeatured.kickoff_utc,
+        stage: rawFeatured.stage,
+        status: rawFeatured.status,
+        home_crest: ht?.crest_url ?? null,
+        away_crest: at?.crest_url ?? null,
+        home_score: rawFeatured.home_score ?? null,
+        away_score: rawFeatured.away_score ?? null,
+      });
     }
 
     // Get user predictions
