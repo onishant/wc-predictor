@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Tooltip } from '@/components/ui/tooltip';
 import type { MatchPrediction } from '@/lib/ml-api';
 import type { TeamWorldCupStats } from '@/lib/football-data';
 
@@ -66,9 +67,24 @@ export function MLPredictionStats({ homeTeam, awayTeam, group, homeTeamStats, aw
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-purple-400">
-        🤖 ML Predictions
-      </p>
+      <div className="flex items-center gap-2">
+        <Tooltip
+          content={
+            <span>
+              <span className="mb-1 block font-semibold text-heading">ML Predictions</span>
+              Powered by an Elo-Poisson model trained on historical match data.
+              Predicts expected goals (xG) and win probabilities based on team strength ratings.
+            </span>
+          }
+        >
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-purple-500/30 text-[10px] font-bold text-purple-300 cursor-help">
+            ?
+          </span>
+        </Tooltip>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-purple-400">
+          🤖 ML Predictions
+        </p>
+      </div>
 
       {/* Match prediction: xG + win probabilities */}
       {data.match && <MatchPredictionCard match={data.match} homeTeam={homeTeam} awayTeam={awayTeam} />}

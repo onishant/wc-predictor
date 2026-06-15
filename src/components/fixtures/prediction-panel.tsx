@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { MLPredictionStats } from '@/components/fixtures/ml-prediction-stats';
+import { CommunityInsight } from '@/components/fixtures/community-insight';
 import { supabase } from '@/lib/supabase-browser';
 import type { TeamVisual } from '@/lib/team-visuals';
 import type { TeamWorldCupStats } from '@/lib/football-data';
@@ -217,6 +218,15 @@ export function PredictionPanel({
                 {result === 'draw' ? 'Evenly matched' : `${result === 'home' ? homeTeam : awayTeam} wins`}
               </p>
             </div>
+          </div>
+
+          {/* Community Insight */}
+          <div className="mb-3">
+            <CommunityInsight
+              matchId={matchId}
+              homeTeam={homeTeam}
+              awayTeam={awayTeam}
+            />
           </div>
 
           {/* ML predictions + current WC stats */}
