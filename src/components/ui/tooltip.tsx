@@ -5,10 +5,10 @@ import { useState, useRef, type ReactNode } from 'react';
 type TooltipProps = {
   children: ReactNode;
   content: ReactNode;
-  side?: 'top' | 'bottom';
+  side?: 'right' | 'top' | 'bottom';
 };
 
-export function Tooltip({ children, content, side = 'top' }: TooltipProps) {
+export function Tooltip({ children, content, side = 'right' }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -20,6 +20,18 @@ export function Tooltip({ children, content, side = 'top' }: TooltipProps) {
   function hide() {
     timeoutRef.current = setTimeout(() => setVisible(false), 100);
   }
+
+  const positionClasses = {
+    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
+    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
+  };
+
+  const arrowClasses = {
+    right: 'right-full top-1/2 -translate-y-1/2 border-r-border-subtle',
+    top: 'top-full left-1/2 -translate-x-1/2 border-t-border-subtle',
+    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-border-subtle',
+  };
 
   return (
     <span
@@ -33,19 +45,11 @@ export function Tooltip({ children, content, side = 'top' }: TooltipProps) {
       {visible && (
         <span
           role="tooltip"
-          className={`absolute z-50 w-64 rounded-xl border border-border-subtle bg-surface-overlay px-3 py-2.5 text-xs leading-relaxed text-body shadow-xl shadow-slate-950/60 ${
-            side === 'top'
-              ? 'bottom-full left-1/2 -translate-x-1/2 mb-2'
-              : 'top-full left-1/2 -translate-x-1/2 mt-2'
-          }`}
+          className={`absolute z-50 w-64 rounded-xl border border-border-subtle bg-surface-overlay px-3 py-2.5 text-xs leading-relaxed text-body shadow-xl shadow-slate-950/60 ${positionClasses[side]}`}
         >
           {content}
           <span
-            className={`absolute left-1/2 -translate-x-1/2 border-4 border-transparent ${
-              side === 'top'
-                ? 'top-full border-t-border-subtle'
-                : 'bottom-full border-b-border-subtle'
-            }`}
+            className={`absolute border-4 border-transparent ${arrowClasses[side]}`}
           />
         </span>
       )}
