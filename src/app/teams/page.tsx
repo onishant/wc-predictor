@@ -13,58 +13,62 @@ type GroupStanding = {
   teams: TeamWorldCupStats[];
 };
 
-// Official 2026 FIFA World Cup groups (positions 1-4 per group)
-// Used as fallback when match data doesn't yet contain group assignments.
-const WC_2026_GROUPS: Array<{ group: string; label: string; teams: string[] }> = [
-  { group: 'GROUP_A', label: 'Group A', teams: ['Mexico', 'South Africa', 'South Korea', 'Czech Republic'] },
-  { group: 'GROUP_B', label: 'Group B', teams: ['Canada', 'Bosnia and Herzegovina', 'Qatar', 'Switzerland'] },
+// Official 2026 FIFA World Cup groups.
+// Each entry can be a string (single name) or array of aliases to try against the API.
+const WC_2026_GROUPS: Array<{ group: string; label: string; teams: Array<string | string[]> }> = [
+  { group: 'GROUP_A', label: 'Group A', teams: ['Mexico', 'South Africa', ['South Korea', 'Korea Republic'], ['Czechia', 'Czech Republic']] },
+  { group: 'GROUP_B', label: 'Group B', teams: ['Canada', ['Bosnia and Herzegovina', 'Bosnia Herzegovina', 'Bosnia'], 'Qatar', 'Switzerland'] },
   { group: 'GROUP_C', label: 'Group C', teams: ['Brazil', 'Morocco', 'Haiti', 'Scotland'] },
-  { group: 'GROUP_D', label: 'Group D', teams: ['United States', 'Paraguay', 'Australia', 'Turkey'] },
-  { group: 'GROUP_E', label: 'Group E', teams: ['Germany', 'Curaçao', 'Ivory Coast', 'Ecuador'] },
+  { group: 'GROUP_D', label: 'Group D', teams: [['United States', 'USA'], 'Paraguay', 'Australia', ['Türkiye', 'Turkey']] },
+  { group: 'GROUP_E', label: 'Group E', teams: ['Germany', ['Curaçao', 'Curacao'], ["Côte d'Ivoire", 'Ivory Coast'], 'Ecuador'] },
   { group: 'GROUP_F', label: 'Group F', teams: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'] },
   { group: 'GROUP_G', label: 'Group G', teams: ['Belgium', 'Egypt', 'Iran', 'New Zealand'] },
-  { group: 'GROUP_H', label: 'Group H', teams: ['Spain', 'Cape Verde', 'Saudi Arabia', 'Uruguay'] },
+  { group: 'GROUP_H', label: 'Group H', teams: ['Spain', ['Cape Verde', 'Cape Verde Islands', 'Cabo Verde'], 'Saudi Arabia', 'Uruguay'] },
   { group: 'GROUP_I', label: 'Group I', teams: ['France', 'Senegal', 'Iraq', 'Norway'] },
   { group: 'GROUP_J', label: 'Group J', teams: ['Argentina', 'Algeria', 'Austria', 'Jordan'] },
-  { group: 'GROUP_K', label: 'Group K', teams: ['Portugal', 'DR Congo', 'Uzbekistan', 'Colombia'] },
+  { group: 'GROUP_K', label: 'Group K', teams: ['Portugal', ['DR Congo', 'Congo DR', 'Congo'], 'Uzbekistan', 'Colombia'] },
   { group: 'GROUP_L', label: 'Group L', teams: ['England', 'Croatia', 'Ghana', 'Panama'] },
 ];
 
-function normalizeName(name: string): string {
+function normalize(name: string): string {
   return name.toLowerCase().replace(/[^a-z]/g, '');
 }
 
-function findTeamByName(
-  name: string,
+function findTeam(
+  aliases: string | string[],
   statsMap: Map<number, TeamWorldCupStats>,
   profiles: Array<{ id: number; name: string; code: string | null; crestUrl: string | null }>,
 ): TeamWorldCupStats | null {
-  const target = normalizeName(name);
+  const names = Array.isArray(aliases) ? aliases : [aliases];
 
-  // Try exact match in stats first
-  for (const stats of statsMap.values()) {
-    if (normalizeName(stats.teamName) === target) return stats;
-  }
+  for (const name of names) {
+    const target = normalize(name);
 
-  // Try profiles (for teams with no matches yet)
-  for (const p of profiles) {
-    if (normalizeName(p.name) === target) {
-      const existing = statsMap.get(p.id);
-      if (existing) return existing;
-      return {
-        teamId: p.id,
-        teamName: p.name,
-        teamVisual: {
-          name: p.name,
-          code: p.code,
-          crestUrl: p.crestUrl,
-          logoUrl: p.crestUrl,
-          flagUrl: getFlagUrlForTeamCode(p.code),
-        },
-        played: 0, won: 0, drawn: 0, lost: 0,
-        goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
-        recentForm: [],
-      };
+    // Try stats first
+    for (const stats of statsMap.values()) {
+      if (normalize(stats.teamName) === target) return stats;
+    }
+
+    // Try profiles
+    for (const p of profiles) {
+      if (normalize(p.name) === target) {
+        const existing = statsMap.get(p.id);
+        if (existing) return existing;
+        return {
+          teamId: p.id,
+          teamName: p.name,
+          teamVisual: {
+            name: p.name,
+            code: p.code,
+            crestUrl: p.crestUrl,
+            logoUrl: p.crestUrl,
+            flagUrl: getFlagUrlForTeamCode(p.code),
+          },
+          played: 0, won: 0, drawn: 0, lost: 0,
+          goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+          recentForm: [],
+        };
+      }
     }
   }
 
@@ -79,43 +83,20 @@ export default async function TeamsPage() {
 
   const statsByTeam = new Map(worldCup.teamStats.map((s) => [s.teamId, s]));
 
-  // Try to extract groups from match data first
-  const teamGroups = new Map<number, string>();
-  const groupLabels = new Map<string, string>();
-  for (const match of worldCup.schedule) {
-    if (match.stage !== 'GROUP_STAGE' || !match.group) continue;
-    if (match.homeTeamId) teamGroups.set(match.homeTeamId, match.group);
-    if (match.awayTeamId) teamGroups.set(match.awayTeamId, match.group);
-    // Try to derive a nice label from the match data
-    if (match.group && !groupLabels.has(match.group)) {
-      const letter = match.group.replace('GROUP_', '');
-      groupLabels.set(match.group, `Group ${letter}`);
-    }
-  }
-
-  // If we have group data from matches, use it (merge with hardcoded for missing teams)
-  // Otherwise, fall back entirely to the hardcoded groups
-  const groups: GroupStanding[] = [];
-
-  for (const wcGroup of WC_2026_GROUPS) {
+  const groups: GroupStanding[] = WC_2026_GROUPS.map((wcGroup) => {
     const groupTeams: TeamWorldCupStats[] = [];
 
-    for (const teamName of wcGroup.teams) {
-      const team = findTeamByName(teamName, statsByTeam, profiles);
+    for (const aliases of wcGroup.teams) {
+      const team = findTeam(aliases, statsByTeam, profiles);
       if (team) groupTeams.push(team);
     }
 
-    // Sort: points desc, GD desc, GF desc, name asc
     groupTeams.sort((a, b) =>
       b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor || a.teamName.localeCompare(b.teamName)
     );
 
-    groups.push({
-      group: wcGroup.group,
-      label: wcGroup.label,
-      teams: groupTeams,
-    });
-  }
+    return { group: wcGroup.group, label: wcGroup.label, teams: groupTeams };
+  });
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 text-heading sm:px-6 lg:px-8">
@@ -129,7 +110,6 @@ export default async function TeamsPage() {
           </p>
         </header>
 
-        {/* Group tables — 2-column grid on large screens */}
         <section className="grid gap-5 lg:grid-cols-2">
           {groups.map((group) => (
             <div key={group.group} className="rounded-2xl border border-border-subtle bg-surface/70 overflow-hidden">
