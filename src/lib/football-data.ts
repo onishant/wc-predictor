@@ -133,6 +133,7 @@ async function footballDataFetch<T>(path: string, searchParams?: Record<string, 
     headers: {
       // Per docs: API token must be sent using X-Auth-Token header.
       'X-Auth-Token': apiKey,
+      'X-Api-Version': 'v4.1',
     },
     // Keep normal browsing from exhausting the provider's strict request limit.
     next: { revalidate: 300 },

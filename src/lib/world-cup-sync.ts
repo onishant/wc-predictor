@@ -31,6 +31,8 @@ type ProviderMatch = {
   id: number;
   utcDate: string;
   status: string;
+  minute?: number | null;
+  injuryTime?: number | null;
   stage?: string | null;
   group?: string | null;
   homeTeam?: ProviderTeam | null;
@@ -175,6 +177,8 @@ export async function syncWorldCup() {
       status: normalizeStatus(match.status),
       home_score: match.score?.fullTime?.home ?? null,
       away_score: match.score?.fullTime?.away ?? null,
+      minute: match.minute ?? null,
+      injury_time: match.injuryTime ?? null,
       settled_at: match.status === 'FINISHED' && match.score?.fullTime?.home != null && match.score?.fullTime?.away != null ? syncedAt : null,
       source_updated_at: syncedAt,
     }];
@@ -313,7 +317,7 @@ async function footballDataFetch<T>(path: string, season?: string) {
   if (season) url.searchParams.set('season', season);
 
   const response = await fetch(url, {
-    headers: { 'X-Auth-Token': apiKey },
+    headers: { 'X-Auth-Token': apiKey, 'X-Api-Version': 'v4.1' },
     cache: 'no-store',
   });
   if (!response.ok) throw new Error(`football-data API error (${response.status}): ${await response.text()}`);
@@ -359,7 +363,7 @@ export async function syncLiveScores() {
   url.searchParams.set('status', 'LIVE,IN_PLAY,PAUSED,FINISHED');
 
   const response = await fetch(url, {
-    headers: { 'X-Auth-Token': apiKey },
+    headers: { 'X-Auth-Token': apiKey, 'X-Api-Version': 'v4.1' },
     cache: 'no-store',
   });
   if (!response.ok) throw new Error(`football-data API error (${response.status}): ${await response.text()}`);
@@ -375,7 +379,7 @@ export async function syncLiveScores() {
   const externalIds = liveMatches.map((m) => String(m.id));
   const { data: existingMatches, error: existingError } = await supabaseAdmin
     .from('matches')
-    .select('external_match_id, home_score, away_score, status')
+    .select('external_match_id, home_score, away_score, status, minute, injury_time')
     .in('external_match_id', externalIds);
   if (existingError) throw existingError;
 
@@ -413,7 +417,9 @@ export async function syncLiveScores() {
       existing &&
       existing.home_score === apiHome &&
       existing.away_score === apiAway &&
-      existing.status === newStatus;
+      existing.status === newStatus &&
+      existing.minute === (match.minute ?? null) &&
+      existing.injury_time === (match.injuryTime ?? null);
     if (scoreUnchanged) continue;
 
     const isFinished =
@@ -431,6 +437,8 @@ export async function syncLiveScores() {
           status: newStatus,
           home_score: apiHome,
           away_score: apiAway,
+          minute: match.minute ?? null,
+          injury_time: match.injuryTime ?? null,
           settled_at: isFinished ? syncedAt : null,
           source_updated_at: syncedAt,
         },
