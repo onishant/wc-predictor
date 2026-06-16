@@ -184,7 +184,7 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                             {(match.status === 'IN_PLAY' || match.status === 'PAUSED') ? (
                               <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-red-500/40 bg-red-500/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-400">
                                 <span className="h-1 w-1 animate-pulse rounded-full bg-red-400" />
-                                Live
+                                {match.minute != null ? `${match.minute}'${match.injuryTime ? `+${match.injuryTime}` : ''}` : 'Live'}
                               </span>
                             ) : (
                               <span className={`mt-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${statusColor}`}>

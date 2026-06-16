@@ -15,6 +15,8 @@ type Match = {
   id: number;
   utcDate: string;
   status: string;
+  minute?: number | null;
+  injuryTime?: number | null;
   stage?: string;
   group?: string;
   matchday?: number;
@@ -82,6 +84,8 @@ export type WorldCupMatchSummary = {
   id: number;
   utcDate: string;
   status: string;
+  minute?: number | null;
+  injuryTime?: number | null;
   stage?: string;
   group?: string;
   homeTeam: string;
@@ -171,6 +175,8 @@ export async function getWorldCupScheduleAndStats(options?: { season?: number })
     id: m.id,
     utcDate: m.utcDate,
     status: m.status,
+    minute: m.minute ?? null,
+    injuryTime: m.injuryTime ?? null,
     stage: m.stage,
     group: m.group,
     homeTeam: m.homeTeam?.name ?? 'TBD',

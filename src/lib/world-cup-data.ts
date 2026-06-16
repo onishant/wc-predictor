@@ -11,6 +11,8 @@ import type { MatchRow, PlayerRow, TeamRow } from '@/lib/types';
 
 type MatchDataRow = MatchRow & {
   external_match_id: string | null;
+  minute: number | null;
+  injury_time: number | null;
 };
 
 export async function getWorldCupData(): Promise<WorldCupData> {
@@ -103,7 +105,7 @@ async function getTeams() {
 async function getMatches() {
   const { data, error } = await supabaseAdmin
     .from('matches')
-    .select('id, external_match_id, stage, kickoff_utc, status, home_score, away_score, home_team_id, away_team_id')
+    .select('id, external_match_id, stage, kickoff_utc, status, home_score, away_score, home_team_id, away_team_id, minute, injury_time')
     .returns<MatchDataRow[]>();
 
   if (error) throw error;
@@ -137,6 +139,8 @@ function toMatchSummary(match: MatchDataRow, teamById: Map<string, TeamRow>): Wo
     id: Number(match.external_match_id),
     utcDate: match.kickoff_utc,
     status: toProviderStatus(match.status),
+    minute: match.minute ?? null,
+    injuryTime: match.injury_time ?? null,
     stage: match.stage ?? undefined,
     homeTeam: home?.name ?? 'TBD',
     awayTeam: away?.name ?? 'TBD',
