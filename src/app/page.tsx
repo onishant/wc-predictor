@@ -50,7 +50,7 @@ export default function HomePage() {
   const [predictionMatchId, setPredictionMatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [news, setNews] = useState<NewsArticle[]>([]);
-  const [featuredMatch, setFeaturedMatch] = useState<Match | null>(null);
+  const [featuredMatches, setFeaturedMatches] = useState<Match[]>([]);
 
   const loadData = useCallback(async () => {
     if (!supabase) return;
@@ -115,59 +115,74 @@ export default function HomePage() {
       setMatches(parsed);
     }
 
-    // Fetch featured match: live/in-play first, else most recently finished
-    const { data: liveMatch } = await supabase
+    // Fetch featured matches: live/in-play first, else most recently finished
+    // Show all matches that share the same kickoff time
+    const { data: liveMatches } = await supabase
       .from('matches')
       .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
       .in('status', ['in_play', 'paused'])
-      .order('kickoff_utc', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order('kickoff_utc', { ascending: false });
 
-    const rawFeatured = liveMatch ?? (await (async () => {
-      const { data } = await supabase
+    let rawFeatured: typeof liveMatches = null;
+
+    if (liveMatches && liveMatches.length > 0) {
+      // All live matches share the same kickoff window — use them all
+      rawFeatured = liveMatches;
+    } else {
+      // Find the most recently finished match, then get all matches at that kickoff time
+      const { data: latestFinished } = await supabase
         .from('matches')
-        .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
+        .select('kickoff_utc')
         .eq('status', 'finished')
         .not('home_score', 'is', null)
         .order('kickoff_utc', { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data;
-    })());
 
-    if (rawFeatured) {
+      if (latestFinished) {
+        const { data: batch } = await supabase
+          .from('matches')
+          .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
+          .eq('kickoff_utc', latestFinished.kickoff_utc);
+        rawFeatured = batch;
+      }
+    }
+
+    if (rawFeatured && rawFeatured.length > 0) {
       // Ensure featured match teams are in teamMap
-      const extraTeamIds = [rawFeatured.home_team_id, rawFeatured.away_team_id].filter(
-        (id): id is string => !!id && !teamMap.has(id),
-      );
-      if (extraTeamIds.length > 0) {
+      const extraTeamIds = rawFeatured
+        .flatMap((m) => [m.home_team_id, m.away_team_id])
+        .filter((id): id is string => !!id && !teamMap.has(id));
+      const uniqueExtra = [...new Set(extraTeamIds)];
+      if (uniqueExtra.length > 0) {
         const { data: extraTeams } = await supabase
           .from('teams')
           .select('id, name, crest_url')
-          .in('id', extraTeamIds);
+          .in('id', uniqueExtra);
         for (const t of extraTeams ?? []) {
           teamMap.set(t.id, { name: t.name, crest_url: t.crest_url });
         }
       }
 
-      const ht = rawFeatured.home_team_id ? teamMap.get(rawFeatured.home_team_id) : null;
-      const at = rawFeatured.away_team_id ? teamMap.get(rawFeatured.away_team_id) : null;
-      setFeaturedMatch({
-        id: rawFeatured.id,
-        external_match_id: rawFeatured.external_match_id,
-        home_team: ht?.name ?? 'TBD',
-        away_team: at?.name ?? 'TBD',
-        home_team_id: rawFeatured.home_team_id,
-        away_team_id: rawFeatured.away_team_id,
-        kickoff_utc: rawFeatured.kickoff_utc,
-        stage: rawFeatured.stage,
-        status: rawFeatured.status,
-        home_crest: ht?.crest_url ?? null,
-        away_crest: at?.crest_url ?? null,
-        home_score: rawFeatured.home_score ?? null,
-        away_score: rawFeatured.away_score ?? null,
-      });
+      setFeaturedMatches(rawFeatured.map((m) => {
+        const ht = m.home_team_id ? teamMap.get(m.home_team_id) : null;
+        const at = m.away_team_id ? teamMap.get(m.away_team_id) : null;
+        return {
+          id: m.id,
+          external_match_id: m.external_match_id,
+          home_team: ht?.name ?? 'TBD',
+          away_team: at?.name ?? 'TBD',
+          home_team_id: m.home_team_id,
+          away_team_id: m.away_team_id,
+          kickoff_utc: m.kickoff_utc,
+          stage: m.stage,
+          status: m.status,
+          home_crest: ht?.crest_url ?? null,
+          away_crest: at?.crest_url ?? null,
+          home_score: m.home_score ?? null,
+          away_score: m.away_score ?? null,
+        };
+      }));
     }
 
     // Get user predictions
@@ -245,11 +260,10 @@ export default function HomePage() {
           </div>
         </header>
 
-        {/* Featured match (live or last finished) */}
-        {featuredMatch && (() => {
-          const pred = predictions[featuredMatch.external_match_id];
-          const isLive = featuredMatch.status === 'in_play' || featuredMatch.status === 'paused';
-          const kickoff = new Date(featuredMatch.kickoff_utc);
+        {/* Featured matches (live or last finished batch) */}
+        {featuredMatches.length > 0 && (() => {
+          const isLive = featuredMatches.some((m) => m.status === 'in_play' || m.status === 'paused');
+          const kickoff = new Date(featuredMatches[0].kickoff_utc);
           const timeLabel = kickoff.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ', ' +
             kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
           return (
@@ -259,65 +273,72 @@ export default function HomePage() {
                   {isLive ? 'Happening now' : 'Just finished'}
                 </p>
                 <h2 className="text-xl font-semibold">
-                  {isLive ? '🔴 Live match' : 'Latest result'}
+                  {isLive ? '🔴 Live matches' : 'Latest results'}
                 </h2>
               </div>
-              <div className="relative overflow-hidden rounded-[20px] border border-border-subtle bg-gradient-to-br from-surface-overlay to-background p-5">
-                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-500 via-purple-500 to-cyan-500" />
+              <div className="grid gap-3 sm:grid-cols-2">
+              {featuredMatches.map((featuredMatch) => {
+                const pred = predictions[featuredMatch.external_match_id];
+                return (
+                  <div key={featuredMatch.id} className="relative overflow-hidden rounded-[20px] border border-border-subtle bg-gradient-to-br from-surface-overlay to-background p-5">
+                    <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-500 via-purple-500 to-cyan-500" />
 
-                {/* Status row */}
-                <div className="mb-4 flex items-center justify-between">
-                  {isLive ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-400">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
-                      Live
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/12 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-400">
-                      ✓ Full Time
-                    </span>
-                  )}
-                  <span className="text-xs text-muted">{timeLabel}</span>
-                </div>
+                    {/* Status row */}
+                    <div className="mb-4 flex items-center justify-between">
+                      {isLive ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-400">
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+                          Live
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/12 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-400">
+                          ✓ Full Time
+                        </span>
+                      )}
+                      <span className="text-xs text-muted">{timeLabel}</span>
+                    </div>
 
-                {/* Teams + score */}
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-1 flex-col items-center gap-2">
-                    <TeamBadge team={{ name: featuredMatch.home_team, crestUrl: featuredMatch.home_crest } as TeamVisual} size="md" />
-                  </div>
-                  <div className="flex min-w-[90px] flex-col items-center gap-1">
-                    {featuredMatch.home_score != null && featuredMatch.away_score != null ? (
-                      <span className="text-3xl font-extrabold tabular-nums tracking-wider text-heading">
-                        {featuredMatch.home_score} – {featuredMatch.away_score}
+                    {/* Teams + score */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-1 flex-col items-center gap-2">
+                        <TeamBadge team={{ name: featuredMatch.home_team, crestUrl: featuredMatch.home_crest } as TeamVisual} size="md" />
+                      </div>
+                      <div className="flex min-w-[90px] flex-col items-center gap-1">
+                        {featuredMatch.home_score != null && featuredMatch.away_score != null ? (
+                          <span className="text-3xl font-extrabold tabular-nums tracking-wider text-heading">
+                            {featuredMatch.home_score} – {featuredMatch.away_score}
+                          </span>
+                        ) : (
+                          <span className="text-lg font-semibold text-faint">vs</span>
+                        )}
+                        {pred && (
+                          <span className="text-[11px] tabular-nums text-muted">
+                            Your pred: {pred.pred_home_score} – {pred.pred_away_score}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-1 flex-col items-center gap-2">
+                        <TeamBadge team={{ name: featuredMatch.away_team, crestUrl: featuredMatch.away_crest } as TeamVisual} size="md" />
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-4 flex items-center justify-between border-t border-border-subtle/40 pt-3">
+                      <span className="text-[11px] uppercase tracking-[0.1em] text-muted">
+                        {featuredMatch.stage ?? 'Stage TBD'}
                       </span>
-                    ) : (
-                      <span className="text-lg font-semibold text-faint">vs</span>
-                    )}
-                    {pred && (
-                      <span className="text-[11px] tabular-nums text-muted">
-                        Your pred: {pred.pred_home_score} – {pred.pred_away_score}
-                      </span>
-                    )}
+                      {pred && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Predicted
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-1 flex-col items-center gap-2">
-                    <TeamBadge team={{ name: featuredMatch.away_team, crestUrl: featuredMatch.away_crest } as TeamVisual} size="md" />
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="mt-4 flex items-center justify-between border-t border-border-subtle/40 pt-3">
-                  <span className="text-[11px] uppercase tracking-[0.1em] text-muted">
-                    {featuredMatch.stage ?? 'Stage TBD'}
-                  </span>
-                  {pred && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      Predicted
-                    </span>
-                  )}
-                </div>
+                );
+              })}
               </div>
             </section>
           );
