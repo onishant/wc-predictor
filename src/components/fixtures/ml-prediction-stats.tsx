@@ -96,11 +96,6 @@ export function MLPredictionStats({ homeTeam, awayTeam, group, homeTeamStats, aw
           {awayTeamStats && <TeamWCCard team={awayTeam} stats={awayTeamStats} />}
         </div>
       )}
-
-      {/* Group standings */}
-      {group && allTeamStats.length > 0 && (
-        <GroupStandings group={group} allTeamStats={allTeamStats} homeTeam={homeTeam} awayTeam={awayTeam} />
-      )}
     </div>
   );
 }
