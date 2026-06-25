@@ -142,6 +142,7 @@ function toMatchSummary(match: MatchDataRow, teamById: Map<string, TeamRow>): Wo
     minute: match.minute ?? null,
     injuryTime: match.injury_time ?? null,
     stage: match.stage ?? undefined,
+    group: match.stage ?? undefined,
     homeTeam: home?.name ?? 'TBD',
     awayTeam: away?.name ?? 'TBD',
     homeTeamId: match.home_team_id ? Number(match.home_team_id) : null,
