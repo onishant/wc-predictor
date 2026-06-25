@@ -58,6 +58,9 @@ export function AppNav() {
       <Link href="/teams" className="rounded-lg border border-border-default px-3 py-2 text-body hover:border-accent hover:text-accent">
         Teams
       </Link>
+      <Link href="/knockout" className="rounded-lg border border-border-default px-3 py-2 text-body hover:border-accent hover:text-accent">
+        Knockout
+      </Link>
       <Link href="/leaderboard" className="rounded-lg border border-border-default px-3 py-2 text-body hover:border-accent hover:text-accent">
         Leaderboard
       </Link>

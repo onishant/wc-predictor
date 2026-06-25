@@ -301,35 +301,32 @@ async function main() {
     .select('external_match_id, home_score, away_score');
   const existingScores = new Map((existingMatches ?? []).map(m => [m.external_match_id, m]));
 
-  const matchRows = matches
-    .map((m) => {
-      const homeId = teamIdByExt.get(String(m.homeTeam?.id));
-      const awayId = teamIdByExt.get(String(m.awayTeam?.id));
-      if (!homeId || !awayId) return null;
+  const matchRows = matches.map((m) => {
+    const homeId = teamIdByExt.get(String(m.homeTeam?.id)) ?? null;
+    const awayId = teamIdByExt.get(String(m.awayTeam?.id)) ?? null;
 
-      const extId = String(m.id);
-      const apiHome = m.score?.fullTime?.home ?? null;
-      const apiAway = m.score?.fullTime?.away ?? null;
-      const existing = existingScores.get(extId);
+    const extId = String(m.id);
+    const apiHome = m.score?.fullTime?.home ?? null;
+    const apiAway = m.score?.fullTime?.away ?? null;
+    const existing = existingScores.get(extId);
 
-      // Use API scores if available, otherwise preserve existing DB scores
-      const homeScore = apiHome != null ? apiHome : (existing?.home_score ?? null);
-      const awayScore = apiAway != null ? apiAway : (existing?.away_score ?? null);
+    // Use API scores if available, otherwise preserve existing DB scores
+    const homeScore = apiHome != null ? apiHome : (existing?.home_score ?? null);
+    const awayScore = apiAway != null ? apiAway : (existing?.away_score ?? null);
 
-      return {
-        external_match_id: extId,
-        stage: m.stage ?? m.group ?? null,
-        home_team_id: homeId,
-        away_team_id: awayId,
-        kickoff_utc: m.utcDate,
-        status: normalizeStatus(m.status),
-        home_score: homeScore,
-        away_score: awayScore,
-        settled_at: m.status === 'FINISHED' && homeScore != null && awayScore != null ? new Date().toISOString() : null,
-        source_updated_at: new Date().toISOString(),
-      };
-    })
-    .filter(Boolean);
+    return {
+      external_match_id: extId,
+      stage: m.stage ?? m.group ?? null,
+      home_team_id: homeId,
+      away_team_id: awayId,
+      kickoff_utc: m.utcDate,
+      status: normalizeStatus(m.status),
+      home_score: homeScore,
+      away_score: awayScore,
+      settled_at: m.status === 'FINISHED' && homeScore != null && awayScore != null ? new Date().toISOString() : null,
+      source_updated_at: new Date().toISOString(),
+    };
+  });
 
   const { error: upsertErr } = await supabase
     .from('matches')

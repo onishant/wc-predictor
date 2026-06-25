@@ -163,12 +163,11 @@ export async function syncWorldCup() {
     if (error) throw error;
   }
 
-  const matchRows = matches.flatMap((match) => {
-    const homeTeamId = match.homeTeam?.id ? teamIdByExternalId.get(String(match.homeTeam.id)) : undefined;
-    const awayTeamId = match.awayTeam?.id ? teamIdByExternalId.get(String(match.awayTeam.id)) : undefined;
-    if (!homeTeamId || !awayTeamId) return [];
+  const matchRows = matches.map((match) => {
+    const homeTeamId = match.homeTeam?.id ? teamIdByExternalId.get(String(match.homeTeam.id)) ?? null : null;
+    const awayTeamId = match.awayTeam?.id ? teamIdByExternalId.get(String(match.awayTeam.id)) ?? null : null;
 
-    return [{
+    return {
       external_match_id: String(match.id),
       stage: match.stage ?? match.group ?? null,
       home_team_id: homeTeamId,
@@ -181,7 +180,7 @@ export async function syncWorldCup() {
       injury_time: match.injuryTime ?? null,
       settled_at: match.status === 'FINISHED' && match.score?.fullTime?.home != null && match.score?.fullTime?.away != null ? syncedAt : null,
       source_updated_at: syncedAt,
-    }];
+    };
   });
 
   const { error: matchesError } = await supabaseAdmin
@@ -398,6 +397,17 @@ export async function syncLiveScores() {
     (allMatches ?? []).map((m) => [m.external_match_id as string, m])
   );
 
+  // Build team ID lookup from provider external IDs to DB IDs
+  const { data: teams, error: teamsError } = await supabaseAdmin
+    .from('teams')
+    .select('id, external_team_id')
+    .not('external_team_id', 'is', null);
+  if (teamsError) throw teamsError;
+
+  const teamIdByExternal = new Map(
+    (teams ?? []).map((t) => [String(t.external_team_id), t.id as string])
+  );
+
   const syncedAt = new Date().toISOString();
   let changed = 0;
   let finished = 0;
@@ -405,14 +415,21 @@ export async function syncLiveScores() {
   for (const match of liveMatches) {
     const extId = String(match.id);
     const existing = existingMap.get(extId);
-    const teamRow = matchTeamMap.get(extId);
-    if (!teamRow) continue; // match not in our DB yet (knockout with no teams)
+    const existingTeamRow = matchTeamMap.get(extId);
+
+    // Resolve team IDs: prefer provider data, fall back to existing DB row
+    const homeTeamId = match.homeTeam?.id
+      ? teamIdByExternal.get(String(match.homeTeam.id)) ?? existingTeamRow?.home_team_id ?? null
+      : existingTeamRow?.home_team_id ?? null;
+    const awayTeamId = match.awayTeam?.id
+      ? teamIdByExternal.get(String(match.awayTeam.id)) ?? existingTeamRow?.away_team_id ?? null
+      : existingTeamRow?.away_team_id ?? null;
 
     const apiHome = match.score?.fullTime?.home ?? null;
     const apiAway = match.score?.fullTime?.away ?? null;
     const newStatus = normalizeStatus(match.status);
 
-    // Skip if nothing changed
+    // Skip if nothing changed and match already exists
     const scoreUnchanged =
       existing &&
       existing.home_score === apiHome &&
@@ -431,8 +448,8 @@ export async function syncLiveScores() {
       .upsert(
         {
           external_match_id: extId,
-          home_team_id: teamRow.home_team_id,
-          away_team_id: teamRow.away_team_id,
+          home_team_id: homeTeamId,
+          away_team_id: awayTeamId,
           kickoff_utc: match.utcDate,
           status: newStatus,
           home_score: apiHome,
