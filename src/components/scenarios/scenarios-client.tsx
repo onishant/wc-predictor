@@ -114,13 +114,28 @@ function addResult(row: StandingRow, goalsFor: number, goalsAgainst: number): St
 }
 
 export function ScenariosClient({ matches, teamMap, teamStats }: Props) {
-  // overrides keyed by match id
+  // Applied overrides (affect standings)
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  // Draft scores being typed (not yet applied)
+  const [drafts, setDrafts] = useState<Record<string, Override>>({});
 
-  const setScore = useCallback((matchId: string, field: 'homeScore' | 'awayScore', value: number) => {
-    setOverrides((prev) => {
+  const setDraft = useCallback((matchId: string, field: 'homeScore' | 'awayScore', value: string) => {
+    setDrafts((prev) => {
       const existing = prev[matchId] ?? { homeScore: 0, awayScore: 0 };
-      return { ...prev, [matchId]: { ...existing, [field]: Math.max(0, value) } };
+      return { ...prev, [matchId]: { ...existing, [field]: value === '' ? 0 : Math.max(0, parseInt(value) || 0) } };
+    });
+  }, []);
+
+  const applyOverride = useCallback((matchId: string) => {
+    setDrafts((prev) => {
+      const draft = prev[matchId];
+      if (draft) {
+        setOverrides((o) => ({ ...o, [matchId]: draft }));
+        const next = { ...prev };
+        delete next[matchId];
+        return next;
+      }
+      return prev;
     });
   }, []);
 
@@ -130,9 +145,17 @@ export function ScenariosClient({ matches, teamMap, teamStats }: Props) {
       delete next[matchId];
       return next;
     });
+    setDrafts((prev) => {
+      const next = { ...prev };
+      delete next[matchId];
+      return next;
+    });
   }, []);
 
-  const clearAll = useCallback(() => setOverrides({}), []);
+  const clearAll = useCallback(() => {
+    setOverrides({});
+    setDrafts({});
+  }, []);
 
   // Build group data
   const groupData = useMemo(() => {
@@ -387,9 +410,11 @@ export function ScenariosClient({ matches, teamMap, teamStats }: Props) {
             key={g.group}
             group={g}
             qualStatus={qualStatus}
-            setScore={setScore}
+            setDraft={setDraft}
+            applyOverride={applyOverride}
             removeOverride={removeOverride}
             overrides={overrides}
+            drafts={drafts}
             teamMap={teamMap}
           />
         ))}
@@ -401,9 +426,11 @@ export function ScenariosClient({ matches, teamMap, teamStats }: Props) {
 function GroupCard({
   group,
   qualStatus,
-  setScore,
+  setDraft,
+  applyOverride,
   removeOverride,
   overrides,
+  drafts,
   teamMap,
 }: {
   group: {
@@ -415,9 +442,11 @@ function GroupCard({
     standings: StandingRow[];
   };
   qualStatus: Map<string, QualStatus>;
-  setScore: (matchId: string, field: 'homeScore' | 'awayScore', value: number) => void;
+  setDraft: (matchId: string, field: 'homeScore' | 'awayScore', value: string) => void;
+  applyOverride: (matchId: string) => void;
   removeOverride: (matchId: string) => void;
   overrides: Record<string, Override>;
+  drafts: Record<string, Override>;
   teamMap: Record<string, TeamRow>;
 }) {
   const statusEmoji: Record<QualStatus, string> = {
@@ -501,11 +530,13 @@ function GroupCard({
             {group.remaining.map((match) => {
               const home = teamMap[match.home_team_id!];
               const away = teamMap[match.away_team_id!];
-              const override = overrides[match.id];
+              const applied = overrides[match.id];
+              const draft = drafts[match.id];
+              const hasDraft = draft != null;
 
               return (
                 <div key={match.id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
-                  override ? 'border-cyan-500/40 bg-cyan-500/5' : 'border-border-subtle/40 bg-background/40'
+                  applied ? 'border-cyan-500/40 bg-cyan-500/5' : 'border-border-subtle/40 bg-background/40'
                 }`}>
                   <div className="flex min-w-0 flex-1 items-center gap-1.5">
                     {home?.crest_url ? (
@@ -519,9 +550,9 @@ function GroupCard({
                       type="number"
                       min="0"
                       max="20"
-                      value={override?.homeScore ?? ''}
+                      defaultValue={applied?.homeScore ?? ''}
                       placeholder="–"
-                      onChange={(e) => setScore(match.id, 'homeScore', parseInt(e.target.value) || 0)}
+                      onChange={(e) => setDraft(match.id, 'homeScore', e.target.value)}
                       className="w-10 rounded border border-border-subtle bg-surface-raised px-1.5 py-1 text-center text-xs font-bold text-heading tabular-nums placeholder:text-faint focus:border-cyan-500 focus:outline-none"
                     />
                     <span className="text-xs text-faint">–</span>
@@ -529,12 +560,22 @@ function GroupCard({
                       type="number"
                       min="0"
                       max="20"
-                      value={override?.awayScore ?? ''}
+                      defaultValue={applied?.awayScore ?? ''}
                       placeholder="–"
-                      onChange={(e) => setScore(match.id, 'awayScore', parseInt(e.target.value) || 0)}
+                      onChange={(e) => setDraft(match.id, 'awayScore', e.target.value)}
                       className="w-10 rounded border border-border-subtle bg-surface-raised px-1.5 py-1 text-center text-xs font-bold text-heading tabular-nums placeholder:text-faint focus:border-cyan-500 focus:outline-none"
                     />
-                    {override && (
+                    {hasDraft && (
+                      <button
+                        type="button"
+                        onClick={() => applyOverride(match.id)}
+                        className="ml-1 rounded bg-cyan-500 px-2 py-1 text-[10px] font-bold text-slate-950 hover:bg-cyan-400"
+                        title="Apply this score"
+                      >
+                        Apply
+                      </button>
+                    )}
+                    {applied && !hasDraft && (
                       <button
                         type="button"
                         onClick={() => removeOverride(match.id)}
