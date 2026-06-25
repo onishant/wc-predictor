@@ -113,36 +113,22 @@ function addResult(row: StandingRow, goalsFor: number, goalsAgainst: number): St
   };
 }
 
-type ResultOption = 'home' | 'draw' | 'away';
-
 export function ScenariosClient({ matches, teamMap, teamStats }: Props) {
   // overrides keyed by match id
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
 
-  const setOverride = useCallback((matchId: string, result: ResultOption) => {
+  const setScore = useCallback((matchId: string, field: 'homeScore' | 'awayScore', value: number) => {
     setOverrides((prev) => {
-      const existing = prev[matchId];
-      // Toggle off if same result clicked again
-      if (existing) {
-        const currentResult: ResultOption =
-          existing.homeScore > existing.awayScore
-            ? 'home'
-            : existing.homeScore < existing.awayScore
-            ? 'away'
-            : 'draw';
-        if (currentResult === result) {
-          const next = { ...prev };
-          delete next[matchId];
-          return next;
-        }
-      }
-      // Set new result with simple scores
-      const scores: Record<ResultOption, Override> = {
-        home: { homeScore: 1, awayScore: 0 },
-        draw: { homeScore: 1, awayScore: 1 },
-        away: { homeScore: 0, awayScore: 1 },
-      };
-      return { ...prev, [matchId]: scores[result] };
+      const existing = prev[matchId] ?? { homeScore: 0, awayScore: 0 };
+      return { ...prev, [matchId]: { ...existing, [field]: Math.max(0, value) } };
+    });
+  }, []);
+
+  const removeOverride = useCallback((matchId: string) => {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      delete next[matchId];
+      return next;
     });
   }, []);
 
@@ -401,7 +387,8 @@ export function ScenariosClient({ matches, teamMap, teamStats }: Props) {
             key={g.group}
             group={g}
             qualStatus={qualStatus}
-            setOverride={setOverride}
+            setScore={setScore}
+            removeOverride={removeOverride}
             overrides={overrides}
             teamMap={teamMap}
           />
@@ -414,7 +401,8 @@ export function ScenariosClient({ matches, teamMap, teamStats }: Props) {
 function GroupCard({
   group,
   qualStatus,
-  setOverride,
+  setScore,
+  removeOverride,
   overrides,
   teamMap,
 }: {
@@ -427,7 +415,8 @@ function GroupCard({
     standings: StandingRow[];
   };
   qualStatus: Map<string, QualStatus>;
-  setOverride: (matchId: string, result: ResultOption) => void;
+  setScore: (matchId: string, field: 'homeScore' | 'awayScore', value: number) => void;
+  removeOverride: (matchId: string) => void;
   overrides: Record<string, Override>;
   teamMap: Record<string, TeamRow>;
 }) {
@@ -513,16 +502,11 @@ function GroupCard({
               const home = teamMap[match.home_team_id!];
               const away = teamMap[match.away_team_id!];
               const override = overrides[match.id];
-              const currentResult: ResultOption | null = override
-                ? override.homeScore > override.awayScore
-                  ? 'home'
-                  : override.homeScore < override.awayScore
-                  ? 'away'
-                  : 'draw'
-                : null;
 
               return (
-                <div key={match.id} className="flex items-center gap-2 rounded-lg border border-border-subtle/40 bg-background/40 px-3 py-2">
+                <div key={match.id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
+                  override ? 'border-cyan-500/40 bg-cyan-500/5' : 'border-border-subtle/40 bg-background/40'
+                }`}>
                   <div className="flex min-w-0 flex-1 items-center gap-1.5">
                     {home?.crest_url ? (
                       <Image src={home.crest_url} alt="" width={16} height={16} className="rounded-full shrink-0" unoptimized />
@@ -531,39 +515,35 @@ function GroupCard({
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setOverride(match.id, 'home')}
-                      className={`rounded px-2 py-1 text-[10px] font-bold transition ${
-                        currentResult === 'home'
-                          ? 'bg-emerald-500 text-slate-950'
-                          : 'bg-surface-raised text-muted hover:bg-emerald-500/20 hover:text-emerald-300'
-                      }`}
-                    >
-                      1
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setOverride(match.id, 'draw')}
-                      className={`rounded px-2 py-1 text-[10px] font-bold transition ${
-                        currentResult === 'draw'
-                          ? 'bg-cyan-500 text-slate-950'
-                          : 'bg-surface-raised text-muted hover:bg-cyan-500/20 hover:text-cyan-300'
-                      }`}
-                    >
-                      X
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setOverride(match.id, 'away')}
-                      className={`rounded px-2 py-1 text-[10px] font-bold transition ${
-                        currentResult === 'away'
-                          ? 'bg-emerald-500 text-slate-950'
-                          : 'bg-surface-raised text-muted hover:bg-emerald-500/20 hover:text-emerald-300'
-                      }`}
-                    >
-                      2
-                    </button>
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      value={override?.homeScore ?? ''}
+                      placeholder="–"
+                      onChange={(e) => setScore(match.id, 'homeScore', parseInt(e.target.value) || 0)}
+                      className="w-10 rounded border border-border-subtle bg-surface-raised px-1.5 py-1 text-center text-xs font-bold text-heading tabular-nums placeholder:text-faint focus:border-cyan-500 focus:outline-none"
+                    />
+                    <span className="text-xs text-faint">–</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      value={override?.awayScore ?? ''}
+                      placeholder="–"
+                      onChange={(e) => setScore(match.id, 'awayScore', parseInt(e.target.value) || 0)}
+                      className="w-10 rounded border border-border-subtle bg-surface-raised px-1.5 py-1 text-center text-xs font-bold text-heading tabular-nums placeholder:text-faint focus:border-cyan-500 focus:outline-none"
+                    />
+                    {override && (
+                      <button
+                        type="button"
+                        onClick={() => removeOverride(match.id)}
+                        className="ml-1 rounded px-1 py-0.5 text-[10px] text-rose-400 hover:bg-rose-500/10"
+                        title="Clear this prediction"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
