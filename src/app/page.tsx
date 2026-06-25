@@ -9,6 +9,7 @@ import { TeamBadge } from '@/components/fixtures/team-badge';
 import { PredictionPanel } from '@/components/fixtures/prediction-panel';
 import { supabase } from '@/lib/supabase-browser';
 import type { TeamVisual } from '@/lib/team-visuals';
+import type { TeamWorldCupStats } from '@/lib/football-data';
 
 type Match = {
   id: string;
@@ -51,6 +52,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [featuredMatches, setFeaturedMatches] = useState<Match[]>([]);
+  const [teamStats, setTeamStats] = useState<TeamWorldCupStats[]>([]);
 
   const loadData = useCallback(async () => {
     if (!supabase) return;
@@ -113,6 +115,76 @@ export default function HomePage() {
         };
       });
       setMatches(parsed);
+    }
+
+    // Fetch all finished group matches to compute team stats for qualification impact
+    const { data: allFinished } = await supabase
+      .from('matches')
+      .select('home_team_id, away_team_id, home_score, away_score, stage, status')
+      .eq('status', 'finished')
+      .not('home_score', 'is', null)
+      .not('away_score', 'is', null);
+
+    if (allFinished) {
+      // Fetch all teams for crest/name
+      const allTeamIds = new Set<string>();
+      for (const m of allFinished) {
+        if (m.home_team_id) allTeamIds.add(m.home_team_id);
+        if (m.away_team_id) allTeamIds.add(m.away_team_id);
+      }
+      const allTeamMap = new Map(teamMap);
+      if (allTeamIds.size > 0) {
+        const { data: allTeams } = await supabase
+          .from('teams')
+          .select('id, name, code, crest_url, flag_url')
+          .in('id', [...allTeamIds]);
+        for (const t of allTeams ?? []) {
+          if (!allTeamMap.has(t.id)) allTeamMap.set(t.id, { name: t.name, crest_url: t.crest_url });
+        }
+      }
+
+      // Build stats
+      const statsMap = new Map<string, TeamWorldCupStats>();
+      const getOrCreate = (teamId: string) => {
+        if (statsMap.has(teamId)) return statsMap.get(teamId)!;
+        const team = allTeamMap.get(teamId);
+        const stats: TeamWorldCupStats = {
+          teamId: 0,
+          teamName: team?.name ?? 'Unknown',
+          teamVisual: { name: team?.name ?? 'Unknown', code: null, crestUrl: team?.crest_url ?? null, logoUrl: null, flagUrl: null },
+          played: 0, won: 0, drawn: 0, lost: 0,
+          goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, recentForm: [],
+        };
+        statsMap.set(teamId, stats);
+        return stats;
+      };
+
+      for (const m of allFinished) {
+        if (!m.home_team_id || !m.away_team_id || m.home_score == null || m.away_score == null) continue;
+        const home = getOrCreate(m.home_team_id);
+        const away = getOrCreate(m.away_team_id);
+        home.played++; away.played++;
+        home.goalsFor += m.home_score; home.goalsAgainst += m.away_score;
+        away.goalsFor += m.away_score; away.goalsAgainst += m.home_score;
+        if (m.home_score > m.away_score) {
+          home.won++; home.points += 3; away.lost++;
+          home.recentForm.push('W'); away.recentForm.push('L');
+        } else if (m.away_score > m.home_score) {
+          away.won++; away.points += 3; home.lost++;
+          away.recentForm.push('W'); home.recentForm.push('L');
+        } else {
+          home.drawn++; away.drawn++; home.points++; away.points++;
+          home.recentForm.push('D'); away.recentForm.push('D');
+        }
+      }
+
+      const computed: TeamWorldCupStats[] = [...statsMap.entries()].map(([teamId, s]) => ({
+        ...s,
+        teamId: Number(teamId) || 0,
+        goalDifference: s.goalsFor - s.goalsAgainst,
+        recentForm: s.recentForm.slice(-5),
+      }));
+      setTeamStats(computed);
     }
 
     // Fetch featured matches: live/in-play first, else most recently finished
@@ -445,7 +517,10 @@ export default function HomePage() {
           awayTeamVisual={{ name: predictionMatch.away_team, crestUrl: predictionMatch.away_crest } as TeamVisual}
           kickoffUtc={predictionMatch.kickoff_utc}
           userId={userId ?? ''}
-          group={undefined}
+          group={predictionMatch.stage ?? undefined}
+          homeTeamStats={teamStats.find((s) => s.teamName === predictionMatch.home_team) ?? null}
+          awayTeamStats={teamStats.find((s) => s.teamName === predictionMatch.away_team) ?? null}
+          allTeamStats={teamStats}
           initialHomeScore={predictions[predictionMatch.external_match_id]?.pred_home_score ?? null}
           initialAwayScore={predictions[predictionMatch.external_match_id]?.pred_away_score ?? null}
           onClose={() => setPredictionMatchId(null)}
