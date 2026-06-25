@@ -61,8 +61,9 @@ export function AppNav() {
       <Link href="/knockout" className="rounded-lg border border-border-default px-3 py-2 text-body hover:border-accent hover:text-accent">
         Knockout
       </Link>
-      <Link href="/scenarios" className="rounded-lg border border-border-default px-3 py-2 text-body hover:border-accent hover:text-accent">
+      <Link href="/scenarios" className="relative rounded-lg border border-border-default px-3 py-2 text-body hover:border-accent hover:text-accent">
         Scenarios
+        <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-950">New</span>
       </Link>
       <Link href="/leaderboard" className="rounded-lg border border-border-default px-3 py-2 text-body hover:border-accent hover:text-accent">
         Leaderboard
