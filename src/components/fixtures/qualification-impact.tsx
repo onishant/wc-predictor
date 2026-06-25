@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import Image from 'next/image';
+import { Tooltip } from '@/components/ui/tooltip';
 import type { TeamWorldCupStats } from '@/lib/football-data';
 
 type Props = {
@@ -23,52 +24,27 @@ type AugmentedStanding = TeamWorldCupStats & {
   gdDelta: number;
 };
 
+const qualColor: Record<string, string> = {
+  top2: 'text-emerald-300',
+  third: 'text-amber-300',
+  out: 'text-rose-300',
+};
+
 export function QualificationImpact({ homeTeam, awayTeam, homeScore, awayScore, group, allTeamStats }: Props) {
   const analysis = useMemo(() => {
-    // Get teams in this group
-    const groupTeams = allTeamStats.filter((s) => {
-      // The group prop is like "GROUP_A", but allTeamStats doesn't have group info directly.
-      // We need to identify group teams by the group prop passed in.
-      // Since we don't have group per team in allTeamStats, we'll use a different approach:
-      // Find the home and away team stats, then find all teams in the same group
-      // by checking if they share the same group stage matches.
-      // For now, we'll use the fact that the PredictionPanel passes the correct group.
-      return true; // Will filter below
-    });
-
-    // Better approach: use the home/away team names to find their group,
-    // then find all teams in that group from the WC_2026_GROUPS constant.
-    // But we don't have that constant here. Instead, we'll use the allTeamStats
-    // which are already grouped in the teams page logic.
-    
-    // Actually, the simplest approach: find teams by name matching
     const homeStats = allTeamStats.find((s) => s.teamName === homeTeam);
     const awayStats = allTeamStats.find((s) => s.teamName === awayTeam);
     if (!homeStats || !awayStats) return null;
 
-    // Find all teams in the same group by checking which teams have played against
-    // the home or away team. Since we don't have match data here, we'll approximate
-    // by looking at allTeamStats and assuming teams with similar points/GD are in the same group.
-    // 
-    // Actually, the best approach: the parent should pass the group's team stats.
-    // For now, we'll just show the impact on the two teams involved.
-
-    // Calculate result
     const homeWin = homeScore > awayScore;
     const draw = homeScore === awayScore;
     const awayWin = awayScore > homeScore;
 
-    // Points earned from this prediction
     const homePoints = homeWin ? 3 : draw ? 1 : 0;
     const awayPoints = awayWin ? 3 : draw ? 1 : 0;
     const homeGD = homeScore - awayScore;
     const awayGD = awayScore - homeScore;
 
-    // Projected stats (current + this match's contribution)
-    // We assume this match is "added" on top of whatever has been played so far.
-    // If the match is already finished, the stats already include it.
-    // We only show impact for upcoming/unplayed matches.
-    
     const homeProjected: AugmentedStanding = {
       ...homeStats,
       projectedPoints: homeStats.points + homePoints,
@@ -76,7 +52,7 @@ export function QualificationImpact({ homeTeam, awayTeam, homeScore, awayScore, 
       projectedGF: homeStats.goalsFor + homeScore,
       pointsDelta: homePoints,
       gdDelta: homeGD,
-      qualStatus: 'top2', // will be calculated below
+      qualStatus: 'top2',
     };
 
     const awayProjected: AugmentedStanding = {
@@ -89,11 +65,6 @@ export function QualificationImpact({ homeTeam, awayTeam, homeScore, awayScore, 
       qualStatus: 'top2',
     };
 
-    // Simple qualification heuristic:
-    // - 7+ points almost certainly qualifies top 2
-    // - 6 points likely qualifies (top 2 or best 3rd)
-    // - 4-5 points depends on other results
-    // - 3 or fewer likely eliminated
     function getQualHint(points: number, gd: number): 'top2' | 'third' | 'out' {
       if (points >= 7) return 'top2';
       if (points === 6 && gd >= 0) return 'top2';
@@ -115,71 +86,87 @@ export function QualificationImpact({ homeTeam, awayTeam, homeScore, awayScore, 
 
   const { homeProjected, awayProjected } = analysis;
 
-  const statusConfig = {
-    top2: { emoji: '✅', label: 'Likely qualifies', color: 'text-emerald-300', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-    third: { emoji: '🟡', label: 'Best 3rd contender', color: 'text-amber-300', bg: 'bg-amber-500/10 border-amber-500/20' },
-    out: { emoji: '❌', label: 'Likely eliminated', color: 'text-rose-300', bg: 'bg-rose-500/10 border-rose-500/20' },
-  };
-
   return (
     <div className="mb-6">
-      <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
-        Qualification impact
-      </p>
-      <div className="space-y-2">
-        <TeamImpactRow team={homeProjected} side="home" statusConfig={statusConfig} />
-        <TeamImpactRow team={awayProjected} side="away" statusConfig={statusConfig} />
+      <div className="flex items-center gap-2 mb-3">
+        <Tooltip
+          content={
+            <span>
+              <span className="mb-1 block font-semibold text-heading">Qualification Impact</span>
+              Shows how your predicted score would affect each team&apos;s group standing and knockout qualification chances.
+              Based on points and goal difference from finished matches.
+            </span>
+          }
+        >
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-cyan-500/30 text-[10px] font-bold text-cyan-300 cursor-help">?</span>
+        </Tooltip>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-400">
+          Qualification impact
+        </p>
       </div>
-      <p className="mt-2 text-center text-[10px] text-faint">
-        Based on {group.replace('_', ' ')} · 7+ pts = likely through · 4 or fewer = likely out
-      </p>
+
+      <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3">
+        {/* Projected outcome */}
+        <p className="mb-2 text-xs text-muted">Projected group outcome</p>
+
+        <div className="mb-3 flex items-center justify-center gap-6">
+          <TeamProjection team={homeProjected} />
+          <span className="text-lg text-faint">vs</span>
+          <TeamProjection team={awayProjected} />
+        </div>
+
+        {/* Status bar */}
+        <div className="mb-1.5 flex h-3 overflow-hidden rounded-full bg-surface-raised">
+          <div
+            className="h-full bg-emerald-400 transition-all"
+            style={{ width: homeProjected.qualStatus === 'top2' ? '50%' : homeProjected.qualStatus === 'third' ? '25%' : '0%' }}
+          />
+          <div className="h-full" style={{ width: '50%' }} />
+          <div
+            className="h-full bg-emerald-400 transition-all"
+            style={{ width: awayProjected.qualStatus === 'top2' ? '50%' : awayProjected.qualStatus === 'third' ? '25%' : '0%' }}
+          />
+        </div>
+
+        <div className="flex justify-between text-[11px]">
+          <span className={qualColor[homeProjected.qualStatus]}>{qualLabel(homeProjected)}</span>
+          <span className={qualColor[awayProjected.qualStatus]}>{qualLabel(awayProjected)}</span>
+        </div>
+
+        <p className="mt-2 text-center text-[10px] text-faint">
+          {group.replace('_', ' ')} · 7+ pts likely through · 4 or fewer likely out
+        </p>
+      </div>
     </div>
   );
 }
 
-function TeamImpactRow({
-  team,
-  side,
-  statusConfig,
-}: {
-  team: AugmentedStanding;
-  side: 'home' | 'away';
-  statusConfig: Record<string, { emoji: string; label: string; color: string; bg: string }>;
-}) {
-  const config = statusConfig[team.qualStatus];
+function qualLabel(team: AugmentedStanding): string {
+  if (team.qualStatus === 'top2') return '✅ Likely qualifies';
+  if (team.qualStatus === 'third') return '🟡 Best 3rd contender';
+  return '❌ Likely eliminated';
+}
 
+function TeamProjection({ team }: { team: AugmentedStanding }) {
   return (
-    <div className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${config.bg}`}>
+    <div className="text-center">
       {team.teamVisual.crestUrl ? (
-        <Image src={team.teamVisual.crestUrl} alt="" width={24} height={24} className="rounded-full shrink-0" unoptimized />
+        <Image src={team.teamVisual.crestUrl} alt="" width={32} height={32} className="mx-auto rounded-full mb-1" unoptimized />
       ) : (
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-raised text-[10px] font-bold text-faint">
+        <span className="mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-xs font-bold text-faint">
           {team.teamVisual.code ?? '??'}
         </span>
       )}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-heading">{team.teamName}</span>
-          <span className="text-xs">{config.emoji}</span>
-        </div>
-        <p className={`text-[11px] ${config.color}`}>{config.label}</p>
-      </div>
-      <div className="text-right">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-heading">{team.projectedPoints} pts</span>
-          {team.pointsDelta > 0 && (
-            <span className="text-[10px] font-bold text-emerald-400">+{team.pointsDelta}</span>
-          )}
-        </div>
-        <p className="text-[10px] text-muted">
-          GD: {team.projectedGD > 0 ? `+${team.projectedGD}` : team.projectedGD}
-          {team.gdDelta !== 0 && (
-            <span className={team.gdDelta > 0 ? 'text-emerald-400' : 'text-rose-400'}>
-              {' '}({team.gdDelta > 0 ? '+' : ''}{team.gdDelta})
-            </span>
-          )}
-        </p>
-      </div>
+      <span className="text-2xl font-bold text-heading">{team.projectedPoints}</span>
+      <p className="text-[11px] text-muted">pts</p>
+      <p className="text-[10px] text-muted">
+        GD {team.projectedGD > 0 ? '+' : ''}{team.projectedGD}
+        {team.gdDelta !== 0 && (
+          <span className={team.gdDelta > 0 ? 'text-emerald-400' : 'text-rose-400'}>
+            {' '}({team.gdDelta > 0 ? '+' : ''}{team.gdDelta})
+          </span>
+        )}
+      </p>
     </div>
   );
 }

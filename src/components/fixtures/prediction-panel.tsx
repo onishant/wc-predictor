@@ -221,6 +221,19 @@ export function PredictionPanel({
             </div>
           </div>
 
+          {/* Qualification Impact */}
+          {group && allTeamStats && allTeamStats.length > 0 && (
+            <QualificationImpact
+              matchId={matchId}
+              homeTeam={homeTeam}
+              awayTeam={awayTeam}
+              homeScore={homeScore}
+              awayScore={awayScore}
+              group={group}
+              allTeamStats={allTeamStats}
+            />
+          )}
+
           {/* Community Insight */}
           <div className="mb-3">
             <CommunityInsight
@@ -239,19 +252,6 @@ export function PredictionPanel({
             awayTeamStats={awayTeamStats}
             allTeamStats={allTeamStats}
           />
-
-          {/* Qualification Impact */}
-          {group && allTeamStats && allTeamStats.length > 0 && (
-            <QualificationImpact
-              matchId={matchId}
-              homeTeam={homeTeam}
-              awayTeam={awayTeam}
-              homeScore={homeScore}
-              awayScore={awayScore}
-              group={group}
-              allTeamStats={allTeamStats}
-            />
-          )}
 
           {/* Message */}
           {message && (
