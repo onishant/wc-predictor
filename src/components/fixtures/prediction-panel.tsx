@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { MLPredictionStats } from '@/components/fixtures/ml-prediction-stats';
 import { CommunityInsight } from '@/components/fixtures/community-insight';
+import { QualificationImpact } from '@/components/fixtures/qualification-impact';
 import { supabase } from '@/lib/supabase-browser';
 import type { TeamVisual } from '@/lib/team-visuals';
 import type { TeamWorldCupStats } from '@/lib/football-data';
@@ -238,6 +239,19 @@ export function PredictionPanel({
             awayTeamStats={awayTeamStats}
             allTeamStats={allTeamStats}
           />
+
+          {/* Qualification Impact */}
+          {group && allTeamStats && allTeamStats.length > 0 && (
+            <QualificationImpact
+              matchId={matchId}
+              homeTeam={homeTeam}
+              awayTeam={awayTeam}
+              homeScore={homeScore}
+              awayScore={awayScore}
+              group={group}
+              allTeamStats={allTeamStats}
+            />
+          )}
 
           {/* Message */}
           {message && (
