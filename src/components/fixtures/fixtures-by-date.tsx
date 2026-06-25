@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { PredictionPanel } from '@/components/fixtures/prediction-panel';
 import type { WorldCupMatchSummary, TeamWorldCupStats } from '@/lib/football-data';
@@ -73,6 +73,7 @@ const statusColors: Record<string, string> = {
 
 export function FixturesByDate({ matches, userId, teamStats = [], predictions = {}, onSaved }: Props) {
   const [predictionMatchId, setPredictionMatchId] = useState<string | null>(null);
+  const activeGroupRef = useRef<HTMLDivElement>(null);
 
   const groups = useMemo(() => groupMatchesByDate(matches), [matches]);
 
@@ -86,6 +87,13 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
     // All dates are in the past — highlight the last group
     return Math.max(0, groups.length - 1);
   }, [groups]);
+
+  // Scroll to the active date group on mount
+  useEffect(() => {
+    if (activeGroupRef.current) {
+      activeGroupRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [activeGroupIndex]);
 
   const predictionMatch = useMemo(
     () => matches.find((m) => String(m.id) === predictionMatchId) ?? null,
@@ -128,7 +136,7 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
         </div>
 
         {groups.map((group, groupIndex) => (
-          <div key={group.dateKey} className="relative pb-8 last:pb-0">
+          <div key={group.dateKey} ref={groupIndex === activeGroupIndex ? activeGroupRef : undefined} className="relative pb-8 last:pb-0">
             {/* Date marker */}
             <div className="relative flex items-start gap-4">
               {/* Timeline dot */}
