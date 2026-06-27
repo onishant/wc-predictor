@@ -100,9 +100,14 @@ export function PredictionPanel({
       : isWinScore
     : true;
 
+  // Winner must match score direction
+  const winnerMatchesScore = isKnockout
+    ? (winner === 'home' && homeScore > awayScore) || (winner === 'away' && awayScore > homeScore)
+    : true;
+
   // Can save?
   const canSave = isKnockout
-    ? decider !== null && winner !== null && scoreValid
+    ? decider !== null && winner !== null && scoreValid && winnerMatchesScore
     : true;
 
   useEffect(() => {
@@ -211,7 +216,7 @@ export function PredictionPanel({
       return next;
     }
 
-    // For FT/ET, update the score and sync winner
+    // For FT/ET, sync winner using the actual next values
     if (isHome) {
       syncWinnerFromScore(next, awayScore);
     } else {
@@ -505,7 +510,15 @@ export function PredictionPanel({
                   : !isSupabaseReady
                     ? 'Login required'
                     : isKnockout && !canSave
-                      ? 'Complete all steps above'
+                      ? !decider
+                        ? 'Select a decider'
+                        : !winner
+                          ? 'Select a winner'
+                          : !scoreValid
+                            ? decider === 'penalties' ? 'Score must be a draw' : 'Score must have a winner'
+                            : !winnerMatchesScore
+                              ? 'Winner doesn\'t match score'
+                              : 'Complete all steps above'
                       : 'Save prediction'}
           </button>
         </div>
