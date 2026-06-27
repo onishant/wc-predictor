@@ -13,6 +13,7 @@ type Props = {
     predicted_result: 'home' | 'away' | 'draw';
     pred_home_score: number;
     pred_away_score: number;
+    predicted_decider: string | null;
   }>;
   onSaved?: () => void;
 };
@@ -275,11 +276,13 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
           kickoffUtc={predictionMatch.utcDate}
           userId={userId}
           group={predictionMatch.group}
+          stage={predictionMatch.stage}
           homeTeamStats={teamStats.find((s) => s.teamName === predictionMatch.homeTeam) ?? null}
           awayTeamStats={teamStats.find((s) => s.teamName === predictionMatch.awayTeam) ?? null}
           allTeamStats={teamStats}
           initialHomeScore={predictions[String(predictionMatch.id)]?.pred_home_score ?? null}
           initialAwayScore={predictions[String(predictionMatch.id)]?.pred_away_score ?? null}
+          initialPredictedDecider={predictions[String(predictionMatch.id)]?.predicted_decider ?? null}
           onClose={() => setPredictionMatchId(null)}
           onSaved={onSaved}
         />

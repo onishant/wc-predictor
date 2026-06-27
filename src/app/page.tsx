@@ -31,6 +31,7 @@ type Prediction = {
   predicted_result: 'home' | 'away' | 'draw';
   pred_home_score: number;
   pred_away_score: number;
+  predicted_decider: string | null;
 };
 
 type NewsArticle = {
@@ -261,7 +262,7 @@ export default function HomePage() {
     if (uid) {
       const { data: predData } = await supabase
         .from('predictions')
-        .select('match_external_id, predicted_result, pred_home_score, pred_away_score')
+        .select('match_external_id, predicted_result, pred_home_score, pred_away_score, predicted_decider')
         .eq('user_id', uid);
 
       if (predData) {
@@ -271,6 +272,7 @@ export default function HomePage() {
             predicted_result: row.predicted_result,
             pred_home_score: row.pred_home_score,
             pred_away_score: row.pred_away_score,
+            predicted_decider: row.predicted_decider ?? null,
           };
         }
         setPredictions(map);
@@ -518,11 +520,13 @@ export default function HomePage() {
           kickoffUtc={predictionMatch.kickoff_utc}
           userId={userId ?? ''}
           group={predictionMatch.stage ?? undefined}
+          stage={predictionMatch.stage ?? undefined}
           homeTeamStats={teamStats.find((s) => s.teamName === predictionMatch.home_team) ?? null}
           awayTeamStats={teamStats.find((s) => s.teamName === predictionMatch.away_team) ?? null}
           allTeamStats={teamStats}
           initialHomeScore={predictions[predictionMatch.external_match_id]?.pred_home_score ?? null}
           initialAwayScore={predictions[predictionMatch.external_match_id]?.pred_away_score ?? null}
+          initialPredictedDecider={predictions[predictionMatch.external_match_id]?.predicted_decider ?? null}
           onClose={() => setPredictionMatchId(null)}
           onSaved={loadData}
         />

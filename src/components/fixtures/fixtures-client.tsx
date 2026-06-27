@@ -20,6 +20,7 @@ type Props = {
     predicted_result: 'home' | 'away' | 'draw';
     pred_home_score: number;
     pred_away_score: number;
+    predicted_decider: string | null;
   }>;
 };
 
@@ -37,15 +38,16 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
     if (!supabase || !uid) return;
     const { data } = await supabase
       .from('predictions')
-      .select('match_external_id, predicted_result, pred_home_score, pred_away_score')
+      .select('match_external_id, predicted_result, pred_home_score, pred_away_score, predicted_decider')
       .eq('user_id', uid);
     if (data) {
-      const map: Record<string, { predicted_result: 'home' | 'away' | 'draw'; pred_home_score: number; pred_away_score: number }> = {};
+      const map: Record<string, { predicted_result: 'home' | 'away' | 'draw'; pred_home_score: number; pred_away_score: number; predicted_decider: string | null }> = {};
       for (const row of data) {
         map[row.match_external_id] = {
           predicted_result: row.predicted_result,
           pred_home_score: row.pred_home_score,
           pred_away_score: row.pred_away_score,
+          predicted_decider: row.predicted_decider ?? null,
         };
       }
       setPredictions(map);
@@ -241,11 +243,13 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
           kickoffUtc={predictionMatch.utcDate}
           userId={currentUserId}
           group={predictionMatch.group}
+          stage={predictionMatch.stage}
           homeTeamStats={teamStats.find((s) => s.teamName === predictionMatch.homeTeam) ?? null}
           awayTeamStats={teamStats.find((s) => s.teamName === predictionMatch.awayTeam) ?? null}
           allTeamStats={teamStats}
           initialHomeScore={predictions[String(predictionMatch.id)]?.pred_home_score ?? null}
           initialAwayScore={predictions[String(predictionMatch.id)]?.pred_away_score ?? null}
+          initialPredictedDecider={predictions[String(predictionMatch.id)]?.predicted_decider ?? null}
           onClose={() => setPredictionMatchId(null)}
           onSaved={() => { if (currentUserId) loadPredictions(currentUserId); }}
         />

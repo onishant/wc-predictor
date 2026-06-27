@@ -9,6 +9,8 @@ import { supabase } from '@/lib/supabase-browser';
 import type { TeamVisual } from '@/lib/team-visuals';
 import type { TeamWorldCupStats } from '@/lib/football-data';
 
+type Decider = 'full_time' | 'extra_time' | 'penalties';
+
 type PredictionPanelProps = {
   matchId: string;
   homeTeam: string;
@@ -18,14 +20,22 @@ type PredictionPanelProps = {
   kickoffUtc: string;
   userId: string;
   group?: string;
+  stage?: string;
   homeTeamStats?: TeamWorldCupStats | null;
   awayTeamStats?: TeamWorldCupStats | null;
   allTeamStats?: TeamWorldCupStats[];
   initialHomeScore?: number | null;
   initialAwayScore?: number | null;
+  initialPredictedDecider?: string | null;
   onClose: () => void;
   onSaved?: () => void;
 };
+
+const DECIDER_OPTIONS: { value: Decider; label: string; icon: string }[] = [
+  { value: 'full_time', label: 'Full Time', icon: '⚽' },
+  { value: 'extra_time', label: 'Extra Time', icon: '⏱️' },
+  { value: 'penalties', label: 'Penalties', icon: '🎯' },
+];
 
 export function PredictionPanel({
   matchId,
@@ -36,11 +46,13 @@ export function PredictionPanel({
   kickoffUtc,
   userId,
   group,
+  stage,
   homeTeamStats,
   awayTeamStats,
   allTeamStats,
   initialHomeScore,
   initialAwayScore,
+  initialPredictedDecider,
   onClose,
   onSaved,
 }: PredictionPanelProps) {
@@ -51,11 +63,41 @@ export function PredictionPanel({
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const result: 'home' | 'away' | 'draw' =
-    homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw';
+  // Knockout-specific state
+  const isKnockout = Boolean(stage && !/GROUP/i.test(stage));
+  const [decider, setDecider] = useState<Decider | null>(
+    (initialPredictedDecider as Decider) ?? null
+  );
+  const [winner, setWinner] = useState<'home' | 'away' | null>(null);
+
+  // Derive result: for knockouts use winner, for group stage use scores
+  const result: 'home' | 'away' | 'draw' = isKnockout
+    ? winner ?? 'home'
+    : homeScore > awayScore
+      ? 'home'
+      : awayScore > homeScore
+        ? 'away'
+        : 'draw';
 
   const isLocked = new Date() >= new Date(kickoffUtc);
   const isSupabaseReady = Boolean(supabase && currentUserId);
+
+  // Score constraints for knockout matches
+  const isDrawScore = homeScore === awayScore;
+  const isWinScore = homeScore !== awayScore;
+
+  // For penalties: only draw scores allowed
+  // For full_time/extra_time: only win scores allowed (no draws)
+  const scoreValid = isKnockout
+    ? decider === 'penalties'
+      ? isDrawScore
+      : isWinScore
+    : true;
+
+  // Can save?
+  const canSave = isKnockout
+    ? decider !== null && winner !== null && scoreValid
+    : true;
 
   useEffect(() => {
     if (!supabase) return;
@@ -82,7 +124,23 @@ export function PredictionPanel({
     };
   }, []);
 
-
+  // Adjust scores when decider changes
+  function handleDeciderChange(newDecider: Decider) {
+    setDecider(newDecider);
+    if (!isKnockout) return;
+    if (newDecider === 'penalties') {
+      // Force draw score
+      if (homeScore !== awayScore) {
+        setHomeScore(0);
+        setAwayScore(0);
+      }
+    } else {
+      // Force win score — if currently a draw, bump home
+      if (homeScore === awayScore) {
+        setHomeScore(homeScore + 1);
+      }
+    }
+  }
 
   async function handleSave() {
     if (!supabase || !currentUserId) {
@@ -97,17 +155,19 @@ export function PredictionPanel({
     setLoading(true);
     setMessage(null);
 
-    const { error } = await supabase.from('predictions').upsert(
-      {
-        user_id: currentUserId,
-        match_external_id: matchId,
-        predicted_result: result,
-        pred_home_score: homeScore,
-        pred_away_score: awayScore,
-        is_locked: false,
-      },
-      { onConflict: 'user_id,match_external_id' },
-    );
+    const payload: Record<string, unknown> = {
+      user_id: currentUserId,
+      match_external_id: matchId,
+      predicted_result: result,
+      pred_home_score: homeScore,
+      pred_away_score: awayScore,
+      predicted_decider: isKnockout ? decider : null,
+      is_locked: false,
+    };
+
+    const { error } = await supabase.from('predictions').upsert(payload, {
+      onConflict: 'user_id,match_external_id',
+    });
 
     setLoading(false);
 
@@ -121,8 +181,19 @@ export function PredictionPanel({
     }
   }
 
-  function adjustScore(current: number, delta: number): number {
-    return Math.max(0, current + delta);
+  function adjustScore(current: number, delta: number, isHome: boolean): number {
+    const next = Math.max(0, current + delta);
+    if (!isKnockout || !decider) return next;
+
+    if (decider === 'penalties') {
+      // Keep draw: adjust both scores together
+      if (isHome) {
+        setAwayScore(next);
+      } else {
+        setHomeScore(next);
+      }
+    }
+    return next;
   }
 
   const kickoff = new Date(kickoffUtc);
@@ -136,6 +207,11 @@ export function PredictionPanel({
     minute: '2-digit',
   });
 
+  const stageLabel = isLocked
+    ? 'Match locked'
+    : isKnockout
+      ? (stage ?? 'Knockout stage')
+      : 'Group stage';
 
   return (
     <>
@@ -168,58 +244,147 @@ export function PredictionPanel({
               {kickoffDisplay} · {timeDisplay}
             </p>
             <p className="mt-1 text-xs uppercase tracking-[0.14em] text-faint">
-              {isLocked ? 'Match locked' : 'Group stage'}
+              {stageLabel}
             </p>
           </div>
 
-          {/* Scoreboard */}
-          <div className="mb-8 flex items-center justify-center gap-4">
-            {/* Home team */}
-            <div className="flex flex-1 flex-col items-center gap-2">
-              <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="md" />
-              <span className="text-sm font-medium text-heading">{homeTeam}</span>
-            </div>
+          {/* ─── KNOCKOUT: Decider + Winner + Score flow ─── */}
+          {isKnockout && !isLocked && (
+            <>
+              {/* Step 1: How will it be decided? */}
+              <div className="mb-6">
+                <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
+                  How will it be decided?
+                </p>
+                <div className="flex gap-2">
+                  {DECIDER_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleDeciderChange(opt.value)}
+                      className={`flex-1 rounded-xl border py-3 text-center text-sm font-medium transition-all ${
+                        decider === opt.value
+                          ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300'
+                          : 'border-border-default text-muted hover:border-border-subtle hover:text-heading'
+                      }`}
+                    >
+                      <span className="block text-lg">{opt.icon}</span>
+                      <span className="block mt-0.5">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Score */}
-            <div className="flex items-center gap-2">
-              <ScoreStepper
-                value={homeScore}
-                onChange={setHomeScore}
-                disabled={isLocked || loading}
-                onDecrease={() => setHomeScore((s) => adjustScore(s, -1))}
-                onIncrease={() => setHomeScore((s) => adjustScore(s, 1))}
-              />
-              <span className="text-2xl font-light text-faint">:</span>
-              <ScoreStepper
-                value={awayScore}
-                onChange={setAwayScore}
-                disabled={isLocked || loading}
-                onDecrease={() => setAwayScore((s) => adjustScore(s, -1))}
-                onIncrease={() => setAwayScore((s) => adjustScore(s, 1))}
-              />
-            </div>
+              {/* Step 2: Who wins? (shown after decider selected) */}
+              {decider && (
+                <div className="mb-6">
+                  <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
+                    Who wins?
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setWinner('home')}
+                      className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3.5 text-sm font-medium transition-all ${
+                        winner === 'home'
+                          ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300'
+                          : 'border-border-default text-muted hover:border-border-subtle hover:text-heading'
+                      }`}
+                    >
+                      <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="sm" />
+                      <span>{homeTeam}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWinner('away')}
+                      className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3.5 text-sm font-medium transition-all ${
+                        winner === 'away'
+                          ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300'
+                          : 'border-border-default text-muted hover:border-border-subtle hover:text-heading'
+                      }`}
+                    >
+                      <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="sm" />
+                      <span>{awayTeam}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
-            {/* Away team */}
-            <div className="flex flex-1 flex-col items-center gap-2">
-              <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="md" />
-              <span className="text-sm font-medium text-heading">{awayTeam}</span>
-            </div>
-          </div>
+              {/* Scoring explainer hint */}
+              {decider && (
+                <div className="mb-6 rounded-xl border border-border-subtle/60 bg-surface/40 px-4 py-3 text-center text-[11px] text-muted">
+                  {decider === 'penalties'
+                    ? '🔒 Score must be a draw (e.g. 0-0, 1-1) — match goes to a shootout.'
+                    : '🔒 Score must have a winner — no draws allowed.'}
+                  <br />
+                  <span className="text-faint">Correct decider = +5 bonus · </span>
+                  <a href="/rules" target="_blank" className="text-cyan-400 hover:underline">Scoring rules →</a>
+                </div>
+              )}
+            </>
+          )}
 
-          {/* Result display (auto-derived from scores) */}
-          <div className="mb-6">
-            <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
-              Match result
-            </p>
-            <div className="rounded-2xl border border-border-subtle bg-surface/60 p-4 text-center">
-              <span className="text-lg font-semibold text-heading">
-                {result === 'home' ? homeTeam : result === 'away' ? awayTeam : 'Draw'}
-              </span>
-              <p className="mt-1 text-xs text-muted">
-                {result === 'draw' ? 'Evenly matched' : `${result === 'home' ? homeTeam : awayTeam} wins`}
-              </p>
-            </div>
-          </div>
+          {/* ─── Scoreboard ─── */}
+          {/* For knockouts: show after winner selected. For group: always show. */}
+          {(!isKnockout || winner) && (
+            <>
+              <div className="mb-8 flex items-center justify-center gap-4">
+                {/* Home team */}
+                <div className="flex flex-1 flex-col items-center gap-2">
+                  <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="md" />
+                  <span className="text-sm font-medium text-heading">{homeTeam}</span>
+                </div>
+
+                {/* Score */}
+                <div className="flex items-center gap-2">
+                  <ScoreStepper
+                    value={homeScore}
+                    onChange={(v) => setHomeScore(v)}
+                    disabled={isLocked || loading}
+                    onDecrease={() => setHomeScore((s) => adjustScore(s, -1, true))}
+                    onIncrease={() => setHomeScore((s) => adjustScore(s, 1, true))}
+                  />
+                  <span className="text-2xl font-light text-faint">:</span>
+                  <ScoreStepper
+                    value={awayScore}
+                    onChange={(v) => setAwayScore(v)}
+                    disabled={isLocked || loading}
+                    onDecrease={() => setAwayScore((s) => adjustScore(s, -1, false))}
+                    onIncrease={() => setAwayScore((s) => adjustScore(s, 1, false))}
+                  />
+                </div>
+
+                {/* Away team */}
+                <div className="flex flex-1 flex-col items-center gap-2">
+                  <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="md" />
+                  <span className="text-sm font-medium text-heading">{awayTeam}</span>
+                </div>
+              </div>
+
+              {/* Result display */}
+              <div className="mb-6">
+                <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
+                  Match result
+                </p>
+                <div className="rounded-2xl border border-border-subtle bg-surface/60 p-4 text-center">
+                  <span className="text-lg font-semibold text-heading">
+                    {result === 'home' ? homeTeam : result === 'away' ? awayTeam : 'Draw'}
+                  </span>
+                  <p className="mt-1 text-xs text-muted">
+                    {isKnockout && decider
+                      ? decider === 'penalties'
+                        ? `Via penalties · ${result === 'home' ? homeTeam : awayTeam} wins shootout`
+                        : decider === 'extra_time'
+                          ? `In extra time · ${result === 'home' ? homeTeam : awayTeam} wins`
+                          : `At full time · ${result === 'home' ? homeTeam : awayTeam} wins`
+                      : result === 'draw'
+                        ? 'Evenly matched'
+                        : `${result === 'home' ? homeTeam : awayTeam} wins`}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Qualification Impact — group stage only */}
           {group && /GROUP/i.test(group) && allTeamStats && allTeamStats.length > 0 && (
@@ -281,24 +446,26 @@ export function PredictionPanel({
           <button
             type="button"
             onClick={handleSave}
-            disabled={isLocked || loading || !isSupabaseReady || saved}
+            disabled={isLocked || loading || !isSupabaseReady || saved || (isKnockout && !canSave)}
             className={`w-full rounded-2xl px-6 py-3.5 text-sm font-semibold transition-all duration-200 ${
               saved
                 ? 'bg-emerald-500 text-slate-950'
-                : isLocked || !isSupabaseReady
-                ? 'cursor-not-allowed bg-surface-raised text-faint'
-                : 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 active:bg-cyan-500'
+                : isLocked || !isSupabaseReady || (isKnockout && !canSave)
+                  ? 'cursor-not-allowed bg-surface-raised text-faint'
+                  : 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 active:bg-cyan-500'
             }`}
           >
             {saved
               ? 'Saved ✓'
               : loading
-              ? 'Saving...'
-              : isLocked
-              ? 'Match locked'
-              : !isSupabaseReady
-              ? 'Login required'
-              : 'Save prediction'}
+                ? 'Saving...'
+                : isLocked
+                  ? 'Match locked'
+                  : !isSupabaseReady
+                    ? 'Login required'
+                    : isKnockout && !canSave
+                      ? 'Complete all steps above'
+                      : 'Save prediction'}
           </button>
         </div>
       </div>

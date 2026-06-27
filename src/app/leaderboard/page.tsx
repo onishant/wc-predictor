@@ -28,6 +28,7 @@ type PredictionRow = {
   predicted_result: 'home' | 'away' | 'draw';
   pred_home_score: number;
   pred_away_score: number;
+  predicted_decider: string | null;
   points_awarded: number | null;
   settled_at: string | null;
   created_at?: string | null;
@@ -167,7 +168,7 @@ export default function LeaderboardPage() {
 
         const { data: predictionData, error: predictionError } = await supabase!
           .from('predictions')
-          .select('id, match_external_id, predicted_result, pred_home_score, pred_away_score, points_awarded, settled_at, created_at')
+          .select('id, match_external_id, predicted_result, pred_home_score, pred_away_score, predicted_decider, points_awarded, settled_at, created_at')
           .eq('user_id', uid);
 
         if (predictionError) {
@@ -513,6 +514,13 @@ export default function LeaderboardPage() {
                             {row.pred_home_score} – {row.pred_away_score}
                           </div>
                           <div className="mt-1 text-xs text-muted">{predictedResultLabel}</div>
+                          {row.predicted_decider && row.match?.stage && !/GROUP/i.test(row.match.stage) && (
+                            <div className="mt-1 text-[11px] text-faint">
+                              {row.predicted_decider === 'penalties' && '🎯 Penalties'}
+                              {row.predicted_decider === 'extra_time' && '⏱️ Extra Time'}
+                              {row.predicted_decider === 'full_time' && '⚽ Full Time'}
+                            </div>
+                          )}
                         </td>
 
                         <td className="px-5 py-4 align-top">
