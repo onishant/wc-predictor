@@ -283,6 +283,7 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
           initialHomeScore={predictions[String(predictionMatch.id)]?.pred_home_score ?? null}
           initialAwayScore={predictions[String(predictionMatch.id)]?.pred_away_score ?? null}
           initialPredictedDecider={predictions[String(predictionMatch.id)]?.predicted_decider ?? null}
+          initialPredictedResult={predictions[String(predictionMatch.id)]?.predicted_result ?? null}
           onClose={() => setPredictionMatchId(null)}
           onSaved={onSaved}
         />

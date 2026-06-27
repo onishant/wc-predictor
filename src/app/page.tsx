@@ -527,6 +527,7 @@ export default function HomePage() {
           initialHomeScore={predictions[predictionMatch.external_match_id]?.pred_home_score ?? null}
           initialAwayScore={predictions[predictionMatch.external_match_id]?.pred_away_score ?? null}
           initialPredictedDecider={predictions[predictionMatch.external_match_id]?.predicted_decider ?? null}
+          initialPredictedResult={predictions[predictionMatch.external_match_id]?.predicted_result ?? null}
           onClose={() => setPredictionMatchId(null)}
           onSaved={loadData}
         />

@@ -250,6 +250,7 @@ export function FixturesClient({ venues, matches, userId, teamStats = [], predic
           initialHomeScore={predictions[String(predictionMatch.id)]?.pred_home_score ?? null}
           initialAwayScore={predictions[String(predictionMatch.id)]?.pred_away_score ?? null}
           initialPredictedDecider={predictions[String(predictionMatch.id)]?.predicted_decider ?? null}
+          initialPredictedResult={predictions[String(predictionMatch.id)]?.predicted_result ?? null}
           onClose={() => setPredictionMatchId(null)}
           onSaved={() => { if (currentUserId) loadPredictions(currentUserId); }}
         />

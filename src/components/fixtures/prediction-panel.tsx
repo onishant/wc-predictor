@@ -27,6 +27,7 @@ type PredictionPanelProps = {
   initialHomeScore?: number | null;
   initialAwayScore?: number | null;
   initialPredictedDecider?: string | null;
+  initialPredictedResult?: 'home' | 'away' | 'draw' | null;
   onClose: () => void;
   onSaved?: () => void;
 };
@@ -53,6 +54,7 @@ export function PredictionPanel({
   initialHomeScore,
   initialAwayScore,
   initialPredictedDecider,
+  initialPredictedResult,
   onClose,
   onSaved,
 }: PredictionPanelProps) {
@@ -68,7 +70,11 @@ export function PredictionPanel({
   const [decider, setDecider] = useState<Decider | null>(
     (initialPredictedDecider as Decider) ?? null
   );
-  const [winner, setWinner] = useState<'home' | 'away' | null>(null);
+  const [winner, setWinner] = useState<'home' | 'away' | null>(
+    isKnockout && initialPredictedResult && initialPredictedResult !== 'draw'
+      ? initialPredictedResult
+      : null
+  );
 
   // Derive result: for knockouts use winner, for group stage use scores
   const result: 'home' | 'away' | 'draw' = isKnockout
