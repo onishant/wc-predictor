@@ -221,8 +221,8 @@ export function PredictionPanel({
             </div>
           </div>
 
-          {/* Qualification Impact */}
-          {group && allTeamStats && allTeamStats.length > 0 && (
+          {/* Qualification Impact — group stage only */}
+          {group && /GROUP/i.test(group) && allTeamStats && allTeamStats.length > 0 && (
             <QualificationImpact
               matchId={matchId}
               homeTeam={homeTeam}
