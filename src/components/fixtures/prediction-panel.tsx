@@ -100,9 +100,11 @@ export function PredictionPanel({
       : isWinScore
     : true;
 
-  // Winner must match score direction
+  // Winner must match score direction (penalties exempt — score is always a draw)
   const winnerMatchesScore = isKnockout
-    ? (winner === 'home' && homeScore > awayScore) || (winner === 'away' && awayScore > homeScore)
+    ? decider === 'penalties'
+      ? true
+      : (winner === 'home' && homeScore > awayScore) || (winner === 'away' && awayScore > homeScore)
     : true;
 
   // Can save?
@@ -338,7 +340,6 @@ export function PredictionPanel({
                       }`}
                     >
                       <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="sm" />
-                      <span>{homeTeam}</span>
                     </button>
                     <button
                       type="button"
@@ -350,7 +351,6 @@ export function PredictionPanel({
                       }`}
                     >
                       <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="sm" />
-                      <span>{awayTeam}</span>
                     </button>
                   </div>
                 </div>
@@ -378,7 +378,6 @@ export function PredictionPanel({
                 {/* Home team */}
                 <div className="flex flex-1 flex-col items-center gap-2">
                   <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="md" />
-                  <span className="text-sm font-medium text-heading">{homeTeam}</span>
                 </div>
 
                 {/* Score */}
@@ -403,7 +402,6 @@ export function PredictionPanel({
                 {/* Away team */}
                 <div className="flex flex-1 flex-col items-center gap-2">
                   <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="md" />
-                  <span className="text-sm font-medium text-heading">{awayTeam}</span>
                 </div>
               </div>
 
