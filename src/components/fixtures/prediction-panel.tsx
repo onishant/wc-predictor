@@ -161,9 +161,13 @@ export function PredictionPanel({
       predicted_result: result,
       pred_home_score: homeScore,
       pred_away_score: awayScore,
-      predicted_decider: isKnockout ? decider : null,
       is_locked: false,
     };
+
+    // Only include predicted_decider if set (avoids errors if column doesn't exist yet)
+    if (isKnockout && decider) {
+      payload.predicted_decider = decider;
+    }
 
     const { error } = await supabase.from('predictions').upsert(payload, {
       onConflict: 'user_id,match_external_id',
@@ -181,19 +185,50 @@ export function PredictionPanel({
     }
   }
 
+  // Sync winner with score changes
+  function syncWinnerFromScore(newHome: number, newAway: number) {
+    if (!isKnockout) return;
+    if (newHome > newAway) setWinner('home');
+    else if (newAway > newHome) setWinner('away');
+    // if draw and penalties, that's fine; if draw and not penalties, adjustScore handles it
+  }
+
+  // Adjust scores and keep winner in sync
   function adjustScore(current: number, delta: number, isHome: boolean): number {
     const next = Math.max(0, current + delta);
     if (!isKnockout || !decider) return next;
 
     if (decider === 'penalties') {
       // Keep draw: adjust both scores together
-      if (isHome) {
-        setAwayScore(next);
-      } else {
-        setHomeScore(next);
-      }
+      setHomeScore(next);
+      setAwayScore(next);
+      return next;
+    }
+
+    // For FT/ET, update the score and sync winner
+    if (isHome) {
+      syncWinnerFromScore(next, awayScore);
+    } else {
+      syncWinnerFromScore(homeScore, next);
     }
     return next;
+  }
+
+  function handleScoreChange(isHome: boolean, value: number) {
+    const v = Math.max(0, value);
+    if (isHome) {
+      setHomeScore(v);
+      if (isKnockout && decider === 'penalties' && v !== awayScore) {
+        setAwayScore(v);
+      }
+      syncWinnerFromScore(v, awayScore);
+    } else {
+      setAwayScore(v);
+      if (isKnockout && decider === 'penalties' && v !== homeScore) {
+        setHomeScore(v);
+      }
+      syncWinnerFromScore(homeScore, v);
+    }
   }
 
   const kickoff = new Date(kickoffUtc);
@@ -339,7 +374,7 @@ export function PredictionPanel({
                 <div className="flex items-center gap-2">
                   <ScoreStepper
                     value={homeScore}
-                    onChange={(v) => setHomeScore(v)}
+                    onChange={(v) => handleScoreChange(true, v)}
                     disabled={isLocked || loading}
                     onDecrease={() => setHomeScore((s) => adjustScore(s, -1, true))}
                     onIncrease={() => setHomeScore((s) => adjustScore(s, 1, true))}
@@ -347,7 +382,7 @@ export function PredictionPanel({
                   <span className="text-2xl font-light text-faint">:</span>
                   <ScoreStepper
                     value={awayScore}
-                    onChange={(v) => setAwayScore(v)}
+                    onChange={(v) => handleScoreChange(false, v)}
                     disabled={isLocked || loading}
                     onDecrease={() => setAwayScore((s) => adjustScore(s, -1, false))}
                     onIncrease={() => setAwayScore((s) => adjustScore(s, 1, false))}
