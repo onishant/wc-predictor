@@ -318,75 +318,228 @@ export function PredictionPanel({
             </p>
           </div>
 
-          {/* ─── KNOCKOUT: Decider + Winner + Score flow ─── */}
+          {/* ─── KNOCKOUT: Step-by-step wizard ─── */}
           {isKnockout && !isLocked && (
             <>
-              {/* Step 1: How will it be decided? */}
-              <div className="mb-6">
-                <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
-                  How will it be decided?
-                </p>
-                <div className="flex gap-2">
-                  {DECIDER_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => handleDeciderChange(opt.value)}
-                      className={`flex-1 rounded-xl border py-3 text-center text-sm font-medium transition-all ${
-                        decider === opt.value
-                          ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300'
-                          : 'border-border-default text-muted hover:border-border-subtle hover:text-heading'
-                      }`}
-                    >
-                      <span className="block text-lg">{opt.icon}</span>
-                      <span className="block mt-0.5">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
+              {/* Step progress indicator */}
+              <div className="mb-6 flex items-center justify-center gap-1">
+                {[1, 2, 3].map((s) => {
+                  const active = s === 1 ? !decider : s === 2 ? decider && !winner : decider && winner;
+                  const done = s === 1 ? !!decider : s === 2 ? !!winner : false;
+                  return (
+                    <div key={s} className="flex items-center">
+                      <div
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                          done
+                            ? 'bg-emerald-500 text-slate-950'
+                            : active
+                              ? 'bg-cyan-400 text-slate-950'
+                              : 'bg-surface-raised text-faint'
+                        }`}
+                      >
+                        {done ? '✓' : s}
+                      </div>
+                      {s < 3 && (
+                        <div className={`mx-1 h-0.5 w-6 rounded-full transition-all ${
+                          done ? 'bg-emerald-500' : 'bg-surface-raised'
+                        }`} />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* Step 2: Who wins? (shown after decider selected) */}
-              {decider && (
-                <div className="mb-6">
-                  <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
-                    Who wins?
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setWinner('home')}
-                      className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3.5 text-sm font-medium transition-all ${
-                        winner === 'home'
-                          ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300'
-                          : 'border-border-default text-muted hover:border-border-subtle hover:text-heading'
-                      }`}
-                    >
-                      <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="sm" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWinner('away')}
-                      className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3.5 text-sm font-medium transition-all ${
-                        winner === 'away'
-                          ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300'
-                          : 'border-border-default text-muted hover:border-border-subtle hover:text-heading'
-                      }`}
-                    >
-                      <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="sm" />
-                    </button>
+              {/* ── Step 1: Decider ── */}
+              {decider ? (
+                /* Completed: compact summary */
+                <button
+                  type="button"
+                  onClick={() => { setDecider(null); setWinner(null); }}
+                  className="mb-4 flex w-full items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-left transition hover:border-emerald-500/50"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-slate-950">✓</span>
+                  <div className="flex-1">
+                    <p className="text-xs text-emerald-400">Decider</p>
+                    <p className="text-sm font-semibold text-heading">
+                      {DECIDER_OPTIONS.find((o) => o.value === decider)?.icon}{' '}
+                      {DECIDER_OPTIONS.find((o) => o.value === decider)?.label}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-faint">Tap to change</span>
+                </button>
+              ) : (
+                /* Active: full selection */
+                <div className="mb-4">
+                  <div className="mb-3 flex items-center justify-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-400 text-[10px] font-bold text-slate-950">1</span>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                      How will it be decided?
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {DECIDER_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleDeciderChange(opt.value)}
+                        className="flex-1 rounded-xl border border-border-default py-3 text-center text-sm font-medium text-muted transition-all hover:border-cyan-400/50 hover:text-heading"
+                      >
+                        <span className="block text-lg">{opt.icon}</span>
+                        <span className="block mt-0.5">{opt.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Scoring explainer hint */}
+              {/* ── Step 2: Winner ── */}
               {decider && (
-                <div className="mb-6 rounded-xl border border-border-subtle/60 bg-surface/40 px-4 py-3">
-                  <p className="text-center text-[11px] text-muted">
-                    {decider === 'penalties'
-                      ? '🔒 Score must be a draw (e.g. 0-0, 1-1) — match goes to a shootout.'
-                      : '🔒 Score must have a winner — no draws allowed.'}
-                  </p>
-                  <div className="mt-2 flex items-center justify-center gap-3 text-[11px]">
+                winner ? (
+                  /* Completed: compact summary */
+                  <button
+                    type="button"
+                    onClick={() => setWinner(null)}
+                    className="mb-4 flex w-full items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-left transition hover:border-emerald-500/50"
+                  >
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-slate-950">✓</span>
+                    <div className="flex-1">
+                      <p className="text-xs text-emerald-400">Winner</p>
+                      <p className="text-sm font-semibold text-heading">
+                        {winner === 'home' ? homeTeam : awayTeam}
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-faint">Tap to change</span>
+                  </button>
+                ) : (
+                  /* Active: full selection */
+                  <div className="mb-4">
+                    <div className="mb-3 flex items-center justify-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-400 text-[10px] font-bold text-slate-950">2</span>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                        Who wins?
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setWinner('home')}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border-default py-3.5 text-sm font-medium text-muted transition-all hover:border-cyan-400/50 hover:text-heading"
+                      >
+                        <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="sm" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWinner('away')}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border-default py-3.5 text-sm font-medium text-muted transition-all hover:border-cyan-400/50 hover:text-heading"
+                      >
+                        <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="sm" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* ── Step 3: Score ── */}
+              {decider && winner && (
+                <>
+                  <div className="mb-3 flex items-center justify-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-400 text-[10px] font-bold text-slate-950">3</span>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                      Pick the score
+                    </p>
+                  </div>
+
+                  {/* Dynamic score context */}
+                  <div className="mb-3 text-center">
+                    <p className="text-sm font-bold text-heading">{scoreContextLabel}</p>
+                    {scoreContextSub && (
+                      <p className="mt-0.5 text-[11px] text-faint">{scoreContextSub}</p>
+                    )}
+                  </div>
+
+                  {/* Scoreboard */}
+                  <div className="mb-3 flex items-center justify-center gap-4">
+                    <div className="flex flex-1 flex-col items-center gap-2">
+                      <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="md" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ScoreStepper
+                        value={homeScore}
+                        onChange={(v) => handleScoreChange(true, v)}
+                        disabled={isLocked || loading}
+                        onDecrease={() => setHomeScore((s) => adjustScore(s, -1, true))}
+                        onIncrease={() => setHomeScore((s) => adjustScore(s, 1, true))}
+                      />
+                      <span className="text-2xl font-light text-faint">:</span>
+                      <ScoreStepper
+                        value={awayScore}
+                        onChange={(v) => handleScoreChange(false, v)}
+                        disabled={isLocked || loading}
+                        onDecrease={() => setAwayScore((s) => adjustScore(s, -1, false))}
+                        onIncrease={() => setAwayScore((s) => adjustScore(s, 1, false))}
+                      />
+                    </div>
+                    <div className="flex flex-1 flex-col items-center gap-2">
+                      <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="md" />
+                    </div>
+                  </div>
+
+                  {/* Score rules hint */}
+                  <div className="mb-4 rounded-xl border border-border-subtle/60 bg-surface/40 px-4 py-2.5 text-center">
+                    <p className="text-[11px] text-muted">
+                      {decider === 'penalties'
+                        ? '🔒 Score must be a draw — shootout score not used'
+                        : '🔒 Score must have a winner — no draws'}
+                    </p>
+                  </div>
+
+                  {/* Result summary */}
+                  <div className="mb-4 rounded-2xl border border-border-subtle bg-surface/60 p-4 text-center">
+                    <span className="text-lg font-semibold text-heading">
+                      {result === 'home' ? homeTeam : result === 'away' ? awayTeam : 'Draw'}
+                    </span>
+                    <p className="mt-1 text-xs text-muted">
+                      {decider === 'penalties'
+                        ? `Via penalties · ${result === 'home' ? homeTeam : awayTeam} wins shootout`
+                        : decider === 'extra_time'
+                          ? `In extra time · ${result === 'home' ? homeTeam : awayTeam} wins`
+                          : `At full time · ${result === 'home' ? homeTeam : awayTeam} wins`}
+                    </p>
+                  </div>
+
+                  {/* Points preview */}
+                  {knockoutPointsPreview && (
+                    <div className="mb-4 rounded-xl border border-border-subtle/60 bg-surface/40 p-4">
+                      <p className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                        <span>🎯</span> Points if correct
+                      </p>
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-faint">Result</span>
+                          <span className="font-semibold tabular-nums text-heading">+{knockoutPointsPreview.result}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-faint">Exact score ({knockoutPointsPreview.scoreLabel})</span>
+                          <span className={`font-semibold tabular-nums ${knockoutPointsPreview.scores > 0 ? 'text-heading' : 'text-red-400'}`}>
+                            {knockoutPointsPreview.scores > 0 ? `+${knockoutPointsPreview.scores}` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-faint">Decider</span>
+                          <span className="font-semibold tabular-nums text-heading">+{knockoutPointsPreview.decider}</span>
+                        </div>
+                        <div className="border-t border-border-subtle/40 pt-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-heading">Maximum</span>
+                            <span className="text-lg font-bold tabular-nums text-cyan-300">{knockoutPointsPreview.max}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Scoring link */}
+                  <div className="mb-6 flex items-center justify-center gap-3 text-[11px]">
                     <span className="inline-flex items-center gap-1 rounded-md bg-cyan-400/10 px-2 py-0.5 font-semibold text-cyan-300">
                       🎯 Decider = +5
                     </span>
@@ -394,32 +547,18 @@ export function PredictionPanel({
                       Full rules →
                     </a>
                   </div>
-                </div>
+                </>
               )}
             </>
           )}
 
-          {/* ─── Scoreboard ─── */}
-          {/* For knockouts: show after winner selected. For group: always show. */}
-          {(!isKnockout || winner) && (
+          {/* ─── Scoreboard (group stage only — knockouts use the wizard above) ─── */}
+          {!isKnockout && (
             <>
-              {/* Dynamic score context label */}
-              {scoreContextLabel && (
-                <div className="mb-2 text-center">
-                  <p className="text-sm font-bold text-heading">{scoreContextLabel}</p>
-                  {scoreContextSub && (
-                    <p className="mt-0.5 text-[11px] text-faint">{scoreContextSub}</p>
-                  )}
-                </div>
-              )}
-
               <div className="mb-8 flex items-center justify-center gap-4">
-                {/* Home team */}
                 <div className="flex flex-1 flex-col items-center gap-2">
                   <TeamBadge team={homeTeamVisual ?? { name: homeTeam }} size="md" />
                 </div>
-
-                {/* Score */}
                 <div className="flex items-center gap-2">
                   <ScoreStepper
                     value={homeScore}
@@ -437,15 +576,12 @@ export function PredictionPanel({
                     onIncrease={() => setAwayScore((s) => adjustScore(s, 1, false))}
                   />
                 </div>
-
-                {/* Away team */}
                 <div className="flex flex-1 flex-col items-center gap-2">
                   <TeamBadge team={awayTeamVisual ?? { name: awayTeam }} size="md" />
                 </div>
               </div>
 
-              {/* Result display */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
                   Match result
                 </p>
@@ -454,49 +590,12 @@ export function PredictionPanel({
                     {result === 'home' ? homeTeam : result === 'away' ? awayTeam : 'Draw'}
                   </span>
                   <p className="mt-1 text-xs text-muted">
-                    {isKnockout && decider
-                      ? decider === 'penalties'
-                        ? `Via penalties · ${result === 'home' ? homeTeam : awayTeam} wins shootout`
-                        : decider === 'extra_time'
-                          ? `In extra time · ${result === 'home' ? homeTeam : awayTeam} wins`
-                          : `At full time · ${result === 'home' ? homeTeam : awayTeam} wins`
-                      : result === 'draw'
-                        ? 'Evenly matched'
-                        : `${result === 'home' ? homeTeam : awayTeam} wins`}
+                    {result === 'draw'
+                      ? 'Evenly matched'
+                      : `${result === 'home' ? homeTeam : awayTeam} wins`}
                   </p>
                 </div>
               </div>
-
-              {/* Points preview — knockout only */}
-              {knockoutPointsPreview && (
-                <div className="mb-6 rounded-xl border border-border-subtle/60 bg-surface/40 p-4">
-                  <p className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
-                    <span>🎯</span> Points if correct
-                  </p>
-                  <div className="space-y-1.5 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-faint">Result</span>
-                      <span className="font-semibold tabular-nums text-heading">+{knockoutPointsPreview.result}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-faint">Exact score ({knockoutPointsPreview.scoreLabel})</span>
-                      <span className={`font-semibold tabular-nums ${knockoutPointsPreview.scores > 0 ? 'text-heading' : 'text-red-400'}`}>
-                        {knockoutPointsPreview.scores > 0 ? `+${knockoutPointsPreview.scores}` : '—'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-faint">Decider</span>
-                      <span className="font-semibold tabular-nums text-heading">+{knockoutPointsPreview.decider}</span>
-                    </div>
-                    <div className="border-t border-border-subtle/40 pt-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-heading">Maximum</span>
-                        <span className="text-lg font-bold tabular-nums text-cyan-300">{knockoutPointsPreview.max}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           )}
 
