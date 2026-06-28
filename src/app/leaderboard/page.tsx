@@ -374,16 +374,29 @@ export default function LeaderboardPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-3 text-xs">
-            <span className="rounded-full bg-emerald-500/15 px-3 py-1 font-semibold text-emerald-300">
-              Exact score: 20 pts
-            </span>
-            <span className="rounded-full bg-cyan-500/15 px-3 py-1 font-semibold text-cyan-300">
-              Correct result: 10 pts
-            </span>
-            <span className="rounded-full bg-purple-500/15 px-3 py-1 font-semibold text-purple-300">
-              Team goals correct: 5 pts each
-            </span>
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap gap-3 text-xs">
+              <span className="rounded-full bg-emerald-500/15 px-3 py-1 font-semibold text-emerald-300">
+                Exact score: +10 each team
+              </span>
+              <span className="rounded-full bg-cyan-500/15 px-3 py-1 font-semibold text-cyan-300">
+                Correct result: +10
+              </span>
+              <span className="rounded-full bg-purple-500/15 px-3 py-1 font-semibold text-purple-300">
+                Group max: 20 pts
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs">
+              <span className="rounded-full bg-amber-500/15 px-3 py-1 font-semibold text-amber-300">
+                Correct decider: +5
+              </span>
+              <span className="rounded-full bg-rose-500/15 px-3 py-1 font-semibold text-rose-300">
+                Knockout max: 25 pts
+              </span>
+              <a href="/rules" className="rounded-full border border-border-default px-3 py-1 font-semibold text-muted hover:text-heading">
+                Full rules →
+              </a>
+            </div>
           </div>
         </header>
 
