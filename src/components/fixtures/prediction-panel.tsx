@@ -112,6 +112,28 @@ export function PredictionPanel({
     ? decider !== null && winner !== null && scoreValid && winnerMatchesScore
     : true;
 
+  // Dynamic score context label for knockouts
+  const scoreContextLabel = isKnockout && decider
+    ? decider === 'full_time'
+      ? 'Score at 90 mins'
+      : 'Score at 120 mins'
+    : null;
+
+  const scoreContextSub = isKnockout && decider === 'penalties'
+    ? 'Shootout score not used for scoring'
+    : null;
+
+  // Points preview for knockouts
+  const knockoutPointsPreview = isKnockout && decider && winner
+    ? {
+        result: 10,
+        scores: scoreValid ? 10 : 0,
+        decider: 5,
+        max: scoreValid ? 25 : 0,
+        scoreLabel: decider === 'full_time' ? 'at 90 mins' : 'at 120 mins',
+      }
+    : null;
+
   useEffect(() => {
     if (!supabase) return;
     let mounted = true;
@@ -358,13 +380,20 @@ export function PredictionPanel({
 
               {/* Scoring explainer hint */}
               {decider && (
-                <div className="mb-6 rounded-xl border border-border-subtle/60 bg-surface/40 px-4 py-3 text-center text-[11px] text-muted">
-                  {decider === 'penalties'
-                    ? '🔒 Score must be a draw (e.g. 0-0, 1-1) — match goes to a shootout.'
-                    : '🔒 Score must have a winner — no draws allowed.'}
-                  <br />
-                  <span className="text-faint">Correct decider = +5 bonus · </span>
-                  <a href="/rules" target="_blank" className="text-cyan-400 hover:underline">Scoring rules →</a>
+                <div className="mb-6 rounded-xl border border-border-subtle/60 bg-surface/40 px-4 py-3">
+                  <p className="text-center text-[11px] text-muted">
+                    {decider === 'penalties'
+                      ? '🔒 Score must be a draw (e.g. 0-0, 1-1) — match goes to a shootout.'
+                      : '🔒 Score must have a winner — no draws allowed.'}
+                  </p>
+                  <div className="mt-2 flex items-center justify-center gap-3 text-[11px]">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-cyan-400/10 px-2 py-0.5 font-semibold text-cyan-300">
+                      🎯 Decider = +5
+                    </span>
+                    <a href="/rules" target="_blank" className="text-faint hover:text-cyan-400 hover:underline">
+                      Full rules →
+                    </a>
+                  </div>
                 </div>
               )}
             </>
@@ -374,6 +403,16 @@ export function PredictionPanel({
           {/* For knockouts: show after winner selected. For group: always show. */}
           {(!isKnockout || winner) && (
             <>
+              {/* Dynamic score context label */}
+              {scoreContextLabel && (
+                <div className="mb-2 text-center">
+                  <p className="text-sm font-bold text-heading">{scoreContextLabel}</p>
+                  {scoreContextSub && (
+                    <p className="mt-0.5 text-[11px] text-faint">{scoreContextSub}</p>
+                  )}
+                </div>
+              )}
+
               <div className="mb-8 flex items-center justify-center gap-4">
                 {/* Home team */}
                 <div className="flex flex-1 flex-col items-center gap-2">
@@ -406,7 +445,7 @@ export function PredictionPanel({
               </div>
 
               {/* Result display */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted">
                   Match result
                 </p>
@@ -427,6 +466,37 @@ export function PredictionPanel({
                   </p>
                 </div>
               </div>
+
+              {/* Points preview — knockout only */}
+              {knockoutPointsPreview && (
+                <div className="mb-6 rounded-xl border border-border-subtle/60 bg-surface/40 p-4">
+                  <p className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                    <span>🎯</span> Points if correct
+                  </p>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-faint">Result</span>
+                      <span className="font-semibold tabular-nums text-heading">+{knockoutPointsPreview.result}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-faint">Exact score ({knockoutPointsPreview.scoreLabel})</span>
+                      <span className={`font-semibold tabular-nums ${knockoutPointsPreview.scores > 0 ? 'text-heading' : 'text-red-400'}`}>
+                        {knockoutPointsPreview.scores > 0 ? `+${knockoutPointsPreview.scores}` : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-faint">Decider</span>
+                      <span className="font-semibold tabular-nums text-heading">+{knockoutPointsPreview.decider}</span>
+                    </div>
+                    <div className="border-t border-border-subtle/40 pt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-heading">Maximum</span>
+                        <span className="text-lg font-bold tabular-nums text-cyan-300">{knockoutPointsPreview.max}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
