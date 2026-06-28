@@ -319,9 +319,9 @@ export function PredictionPanel({
           </div>
 
           {/* ─── KNOCKOUT: Step-by-step wizard ─── */}
-          {isKnockout && !isLocked && (
+          {isKnockout && (
             <>
-              {/* Step progress indicator */}
+              {/* Step progress indicator — show progress even when locked */}
               <div className="mb-6 flex items-center justify-center gap-1">
                 {[1, 2, 3].map((s) => {
                   const active = s === 1 ? !decider : s === 2 ? decider && !winner : decider && winner;
@@ -354,8 +354,13 @@ export function PredictionPanel({
                 /* Completed: compact summary */
                 <button
                   type="button"
-                  onClick={() => { setDecider(null); setWinner(null); }}
-                  className="mb-4 flex w-full items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-left transition hover:border-emerald-500/50"
+                  onClick={() => { if (!isLocked) { setDecider(null); setWinner(null); } }}
+                  disabled={isLocked}
+                  className={`mb-4 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                    isLocked
+                      ? 'border-emerald-500/20 bg-emerald-500/5 cursor-default'
+                      : 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50'
+                  }`}
                 >
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-slate-950">✓</span>
                   <div className="flex-1">
@@ -365,7 +370,7 @@ export function PredictionPanel({
                       {DECIDER_OPTIONS.find((o) => o.value === decider)?.label}
                     </p>
                   </div>
-                  <span className="text-[11px] text-faint">Tap to change</span>
+                  {!isLocked && <span className="text-[11px] text-faint">Tap to change</span>}
                 </button>
               ) : (
                 /* Active: full selection */
@@ -398,8 +403,13 @@ export function PredictionPanel({
                   /* Completed: compact summary */
                   <button
                     type="button"
-                    onClick={() => setWinner(null)}
-                    className="mb-4 flex w-full items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-left transition hover:border-emerald-500/50"
+                    onClick={() => { if (!isLocked) setWinner(null); }}
+                    disabled={isLocked}
+                    className={`mb-4 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                      isLocked
+                        ? 'border-emerald-500/20 bg-emerald-500/5 cursor-default'
+                        : 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50'
+                    }`}
                   >
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-slate-950">✓</span>
                     <div className="flex-1">
@@ -408,7 +418,7 @@ export function PredictionPanel({
                         {winner === 'home' ? homeTeam : awayTeam}
                       </p>
                     </div>
-                    <span className="text-[11px] text-faint">Tap to change</span>
+                    {!isLocked && <span className="text-[11px] text-faint">Tap to change</span>}
                   </button>
                 ) : (
                   /* Active: full selection */
@@ -443,9 +453,13 @@ export function PredictionPanel({
               {decider && winner && (
                 <>
                   <div className="mb-3 flex items-center justify-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-400 text-[10px] font-bold text-slate-950">3</span>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">
-                      Pick the score
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                      isLocked ? 'bg-surface-raised text-faint' : 'bg-cyan-400 text-slate-950'
+                    }`}>3</span>
+                    <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${
+                      isLocked ? 'text-faint' : 'text-cyan-300'
+                    }`}>
+                      {isLocked ? 'Score' : 'Pick the score'}
                     </p>
                   </div>
 
@@ -484,14 +498,16 @@ export function PredictionPanel({
                     </div>
                   </div>
 
-                  {/* Score rules hint */}
-                  <div className="mb-4 rounded-xl border border-border-subtle/60 bg-surface/40 px-4 py-2.5 text-center">
-                    <p className="text-[11px] text-muted">
-                      {decider === 'penalties'
-                        ? '🔒 Score must be a draw — shootout score not used'
-                        : '🔒 Score must have a winner — no draws'}
-                    </p>
-                  </div>
+                  {/* Score rules hint — only when editable */}
+                  {!isLocked && (
+                    <div className="mb-4 rounded-xl border border-border-subtle/60 bg-surface/40 px-4 py-2.5 text-center">
+                      <p className="text-[11px] text-muted">
+                        {decider === 'penalties'
+                          ? '🔒 Score must be a draw — shootout score not used'
+                          : '🔒 Score must have a winner — no draws'}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Result summary */}
                   <div className="mb-4 rounded-2xl border border-border-subtle bg-surface/60 p-4 text-center">
@@ -538,15 +554,17 @@ export function PredictionPanel({
                     </div>
                   )}
 
-                  {/* Scoring link */}
-                  <div className="mb-6 flex items-center justify-center gap-3 text-[11px]">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-cyan-400/10 px-2 py-0.5 font-semibold text-cyan-300">
-                      🎯 Decider = +5
-                    </span>
-                    <a href="/rules" target="_blank" className="text-faint hover:text-cyan-400 hover:underline">
-                      Full rules →
-                    </a>
-                  </div>
+                  {/* Scoring link — only when editable */}
+                  {!isLocked && (
+                    <div className="mb-6 flex items-center justify-center gap-3 text-[11px]">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-cyan-400/10 px-2 py-0.5 font-semibold text-cyan-300">
+                        🎯 Decider = +5
+                      </span>
+                      <a href="/rules" target="_blank" className="text-faint hover:text-cyan-400 hover:underline">
+                        Full rules →
+                      </a>
+                    </div>
+                  )}
                 </>
               )}
             </>
