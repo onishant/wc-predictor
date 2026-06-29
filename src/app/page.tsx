@@ -7,6 +7,7 @@ import { AppNav } from '@/components/app-nav';
 import { MatchCard } from '@/components/fixtures/match-card';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { PredictionPanel } from '@/components/fixtures/prediction-panel';
+import { CircularBracket } from '@/components/knockout/circular-bracket';
 import { supabase } from '@/lib/supabase-browser';
 import type { TeamVisual } from '@/lib/team-visuals';
 import type { TeamWorldCupStats } from '@/lib/football-data';
@@ -34,16 +35,6 @@ type Prediction = {
   predicted_decider: string | null;
 };
 
-type NewsArticle = {
-  id: string;
-  title: string;
-  url: string;
-  source: string;
-  image_url: string | null;
-  summary: string | null;
-  published_at: string | null;
-  matched_teams: string[];
-};
 
 export default function HomePage() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -51,7 +42,6 @@ export default function HomePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [predictionMatchId, setPredictionMatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [news, setNews] = useState<NewsArticle[]>([]);
   const [featuredMatches, setFeaturedMatches] = useState<Match[]>([]);
   const [teamStats, setTeamStats] = useState<TeamWorldCupStats[]>([]);
 
@@ -279,14 +269,6 @@ export default function HomePage() {
       }
     }
 
-    // Fetch news
-    const { data: newsData } = await supabase
-      .from('news')
-      .select('id, title, url, source, image_url, summary, published_at, matched_teams')
-      .order('published_at', { ascending: false })
-      .limit(10);
-    if (newsData) setNews((newsData as NewsArticle[] | null) ?? []);
-
     setLoading(false);
   }, []);
 
@@ -465,47 +447,20 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* News */}
+        {/* Knockout bracket */}
         <section className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Latest news</h2>
-          {news.length === 0 ? (
-            <div className="rounded-2xl border border-border-subtle bg-surface/40 p-8 text-center">
-              <p className="text-sm text-muted">No news yet. Articles about teams in upcoming matches will appear here.</p>
-            </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {news.map((article) => (
-                <a
-                  key={article.id}
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group rounded-2xl border border-border-subtle bg-surface/60 p-4 transition hover:border-cyan-500/30 hover:bg-surface-raised/50"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-heading group-hover:text-cyan-300 line-clamp-2">{article.title}</h3>
-                    {article.image_url && (
-                      <img src={article.image_url} alt="" className="h-16 w-16 flex-shrink-0 rounded-lg object-cover" />
-                    )}
-                  </div>
-                  {article.summary && (
-                    <p className="mt-2 text-xs text-muted line-clamp-2">{article.summary}</p>
-                  )}
-                  <div className="mt-2 flex items-center gap-2 text-xs text-faint">
-                    <span className="font-medium text-cyan-400/70">{article.source}</span>
-                    {article.published_at && (
-                      <>
-                        <span>·</span>
-                        <time dateTime={article.published_at}>
-                          {new Date(article.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                        </time>
-                      </>
-                    )}
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold">Knockout bracket</h2>
+            <p className="mt-1 text-sm text-muted">Road to the final</p>
+          </div>
+          <div className="rounded-3xl border border-border-subtle bg-surface/30 p-4">
+            <CircularBracket />
+          </div>
+          <div className="mt-3 text-center">
+            <Link href="/knockout" className="text-sm text-cyan-400 hover:text-cyan-300">
+              View full bracket →
+            </Link>
+          </div>
         </section>
       </div>
 
