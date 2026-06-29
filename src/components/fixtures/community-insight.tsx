@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Tooltip } from '@/components/ui/tooltip';
+import { CollapsibleDropdown } from '@/components/ui/collapsible-dropdown';
 
 type CommunityInsightData = {
   match_id: string;
@@ -19,6 +20,8 @@ type Props = {
   matchId: string;
   homeTeam: string;
   awayTeam: string;
+  /** Wrap in a collapsible dropdown. */
+  useDropdown?: boolean;
 };
 
 const agreementStyles: Record<string, { bg: string; text: string; dot: string; label: string }> = {
@@ -36,7 +39,7 @@ const communityTooltip = (
   </span>
 );
 
-export function CommunityInsight({ matchId, homeTeam, awayTeam }: Props) {
+function useCommunityInsight(matchId: string) {
   const [data, setData] = useState<CommunityInsightData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -63,25 +66,46 @@ export function CommunityInsight({ matchId, homeTeam, awayTeam }: Props) {
     return () => { mounted = false; };
   }, [matchId]);
 
-  if (loading) {
+  return { data, loading };
+}
+
+function buildPreview(data: CommunityInsightData | null): string | undefined {
+  if (!data || data.sample_size === 0) return undefined;
+  const agreement = agreementStyles[data.agreement]?.label ?? 'Moderate';
+  return `${data.sample_size} players · ${agreement} agreement`;
+}
+
+export function CommunityInsight({ matchId, homeTeam, awayTeam, useDropdown = false }: Props) {
+  const { data, loading } = useCommunityInsight(matchId);
+
+  const content = (
+    <CommunityInsightContent
+      data={data}
+      loading={loading}
+      homeTeam={homeTeam}
+      awayTeam={awayTeam}
+    />
+  );
+
+  if (useDropdown) {
     return (
-      <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-3">
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
-          <span className="text-xs text-muted">Loading community insight...</span>
-        </div>
-      </div>
+      <CollapsibleDropdown
+        icon={
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-emerald-500/30 text-[11px]">
+            👥
+          </span>
+        }
+        label="Community Insight"
+        preview={loading ? undefined : buildPreview(data)}
+      >
+        {content}
+      </CollapsibleDropdown>
     );
   }
 
-  if (!data || data.sample_size === 0) return null;
-
-  const agreement = agreementStyles[data.agreement] ?? agreementStyles.moderate;
-  const updatedAgo = getTimeAgo(data.last_computed_at);
-
+  // Legacy: render with own container (for pages that still use it inline)
   return (
     <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-3">
-      {/* Header */}
       <div className="mb-3 flex items-center gap-2">
         <Tooltip content={communityTooltip}>
           <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-purple-500/30 text-[10px] font-bold text-purple-300 cursor-help">
@@ -92,7 +116,38 @@ export function CommunityInsight({ matchId, homeTeam, awayTeam }: Props) {
           Community Insight
         </p>
       </div>
+      {content}
+    </div>
+  );
+}
 
+function CommunityInsightContent({
+  data,
+  loading,
+  homeTeam,
+  awayTeam,
+}: {
+  data: CommunityInsightData | null;
+  loading: boolean;
+  homeTeam: string;
+  awayTeam: string;
+}) {
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-2">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
+        <span className="text-xs text-muted">Loading community insight...</span>
+      </div>
+    );
+  }
+
+  if (!data || data.sample_size === 0) return null;
+
+  const agreement = agreementStyles[data.agreement] ?? agreementStyles.moderate;
+  const updatedAgo = getTimeAgo(data.last_computed_at);
+
+  return (
+    <>
       {/* Top players predict */}
       <div className="mb-3 flex items-center justify-between">
         <span className="text-xs text-muted">Top players predict</span>
@@ -142,7 +197,7 @@ export function CommunityInsight({ matchId, homeTeam, awayTeam }: Props) {
         <span>⏱</span>
         <span>Updated {updatedAgo} · Skill-weighted</span>
       </div>
-    </div>
+    </>
   );
 }
 

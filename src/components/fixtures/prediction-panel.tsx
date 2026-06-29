@@ -630,24 +630,25 @@ export function PredictionPanel({
             />
           )}
 
-          {/* Community Insight */}
-          <div className="mb-3">
+          {/* Insights dropdowns */}
+          <div className="space-y-2.5">
             <CommunityInsight
               matchId={matchId}
               homeTeam={homeTeam}
               awayTeam={awayTeam}
+              useDropdown
+            />
+
+            <MLPredictionStats
+              homeTeam={homeTeam}
+              awayTeam={awayTeam}
+              group={group}
+              homeTeamStats={homeTeamStats}
+              awayTeamStats={awayTeamStats}
+              allTeamStats={allTeamStats}
+              useDropdown
             />
           </div>
-
-          {/* ML predictions + current WC stats */}
-          <MLPredictionStats
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-            group={group}
-            homeTeamStats={homeTeamStats}
-            awayTeamStats={awayTeamStats}
-            allTeamStats={allTeamStats}
-          />
 
           {/* Message */}
           {message && (

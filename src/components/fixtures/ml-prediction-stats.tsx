@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Tooltip } from '@/components/ui/tooltip';
+import { CollapsibleDropdown } from '@/components/ui/collapsible-dropdown';
 import type { MatchPrediction } from '@/lib/ml-api';
 import type { TeamWorldCupStats } from '@/lib/football-data';
 
@@ -12,6 +13,8 @@ type Props = {
   homeTeamStats?: TeamWorldCupStats | null;
   awayTeamStats?: TeamWorldCupStats | null;
   allTeamStats?: TeamWorldCupStats[];
+  /** Wrap in a collapsible dropdown. */
+  useDropdown?: boolean;
 };
 
 type MLData = {
@@ -25,11 +28,8 @@ const formColor: Record<string, string> = {
   L: 'bg-red-500 text-slate-950',
 };
 
-export function MLPredictionStats({ homeTeam, awayTeam, group, homeTeamStats, awayTeamStats, allTeamStats = [] }: Props) {
-  const [data, setData] = useState<MLData>({
-    match: null,
-    loading: true,
-  });
+function useMLPrediction(homeTeam: string, awayTeam: string) {
+  const [data, setData] = useState<MLData>({ match: null, loading: true });
 
   useEffect(() => {
     let mounted = true;
@@ -45,26 +45,57 @@ export function MLPredictionStats({ homeTeam, awayTeam, group, homeTeamStats, aw
     }
 
     fetchML();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [homeTeam, awayTeam]);
 
-  if (data.loading) {
+  return data;
+}
+
+function buildMLPreview(match: MatchPrediction | null): string | undefined {
+  if (!match) return undefined;
+  return `xG ${match.expected_home_goals.toFixed(1)} vs ${match.expected_away_goals.toFixed(1)}`;
+}
+
+export function MLPredictionStats({
+  homeTeam,
+  awayTeam,
+  group,
+  homeTeamStats,
+  awayTeamStats,
+  allTeamStats = [],
+  useDropdown = false,
+}: Props) {
+  const data = useMLPrediction(homeTeam, awayTeam);
+
+  const content = (
+    <MLPredictionStatsContent
+      data={data}
+      homeTeam={homeTeam}
+      awayTeam={awayTeam}
+      group={group}
+      homeTeamStats={homeTeamStats}
+      awayTeamStats={awayTeamStats}
+      allTeamStats={allTeamStats}
+    />
+  );
+
+  if (useDropdown) {
     return (
-      <div className="rounded-xl border border-border-subtle bg-surface/60 p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
-          <span className="text-xs text-muted">Loading ML predictions...</span>
-        </div>
-      </div>
+      <CollapsibleDropdown
+        icon={
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-purple-500/30 text-[11px]">
+            🤖
+          </span>
+        }
+        label="ML Prediction"
+        preview={data.loading ? undefined : buildMLPreview(data.match)}
+      >
+        {content}
+      </CollapsibleDropdown>
     );
   }
 
-  if (!data.match && !homeTeamStats && !awayTeamStats) {
-    return null;
-  }
-
+  // Legacy: render with own header
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -85,7 +116,43 @@ export function MLPredictionStats({ homeTeam, awayTeam, group, homeTeamStats, aw
           🤖 ML Predictions
         </p>
       </div>
+      {content}
+    </div>
+  );
+}
 
+function MLPredictionStatsContent({
+  data,
+  homeTeam,
+  awayTeam,
+  group,
+  homeTeamStats,
+  awayTeamStats,
+  allTeamStats,
+}: {
+  data: MLData;
+  homeTeam: string;
+  awayTeam: string;
+  group?: string;
+  homeTeamStats?: TeamWorldCupStats | null;
+  awayTeamStats?: TeamWorldCupStats | null;
+  allTeamStats: TeamWorldCupStats[];
+}) {
+  if (data.loading) {
+    return (
+      <div className="flex items-center gap-2 py-2">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
+        <span className="text-xs text-muted">Loading ML predictions...</span>
+      </div>
+    );
+  }
+
+  if (!data.match && !homeTeamStats && !awayTeamStats) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3">
       {/* Match prediction: xG + win probabilities */}
       {data.match && <MatchPredictionCard match={data.match} homeTeam={homeTeam} awayTeam={awayTeam} />}
 
@@ -220,7 +287,6 @@ function GroupStandings({
   homeTeam: string;
   awayTeam: string;
 }) {
-  // Filter teams in this group and sort by points, then GD, then GF
   const groupTeams = allTeamStats
     .filter((t) => t.teamName === homeTeam || t.teamName === awayTeam || t.played > 0)
     .sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor)
