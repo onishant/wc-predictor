@@ -364,14 +364,15 @@ function scorePrediction(prediction: PredictionSettlementRow, match: FinishedMat
     actualResult = getResult(scoreHome, scoreAway);
   } else if (decider === 'extra_time') {
     // Use 120-min score if available, else fall back to fullTime
-    scoreHome = match.home_score_et ?? match.home_score;
-    scoreAway = match.away_score_et ?? match.away_score;
+    // home_score_et = goals scored in extra time only, not cumulative
+    scoreHome = match.home_score;
+    scoreAway = match.away_score;
     if (scoreHome == null || scoreAway == null) return 0;
     actualResult = getResult(scoreHome, scoreAway);
   } else {
     // penalties: score is 120-min result, winner is shootout
-    scoreHome = match.home_score_et ?? match.home_score;
-    scoreAway = match.away_score_et ?? match.away_score;
+    scoreHome = match.home_score;
+    scoreAway = match.away_score;
     if (scoreHome == null || scoreAway == null) return 0;
     // At penalties, 120-min score is always a draw
     actualResult = 'draw';
