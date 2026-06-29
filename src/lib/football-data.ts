@@ -96,6 +96,8 @@ export type WorldCupMatchSummary = {
   awayTeamVisual: TeamVisual;
   homeScore: number | null;
   awayScore: number | null;
+  homePenaltyScore?: number | null;
+  awayPenaltyScore?: number | null;
 };
 
 export type TeamWorldCupStats = {

@@ -26,6 +26,8 @@ type Match = {
   away_crest: string | null;
   home_score: number | null;
   away_score: number | null;
+  home_score_pen: number | null;
+  away_score_pen: number | null;
 };
 
 type Prediction = {
@@ -59,7 +61,7 @@ export default function HomePage() {
 
     const { data: matchData, error: matchError } = await supabase
       .from('matches')
-      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
+      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen')
       .gte('kickoff_utc', now)
       .lte('kickoff_utc', in48h)
       .order('kickoff_utc', { ascending: true });
@@ -103,6 +105,8 @@ export default function HomePage() {
           away_crest: at?.crest_url ?? null,
           home_score: (m as Record<string, unknown>).home_score as number | null ?? null,
           away_score: (m as Record<string, unknown>).away_score as number | null ?? null,
+          home_score_pen: (m as Record<string, unknown>).home_score_pen as number | null ?? null,
+          away_score_pen: (m as Record<string, unknown>).away_score_pen as number | null ?? null,
         };
       });
       setMatches(parsed);
@@ -182,7 +186,7 @@ export default function HomePage() {
     // Show all matches that share the same kickoff time
     const { data: liveMatches } = await supabase
       .from('matches')
-      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
+      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen')
       .in('status', ['in_play', 'paused'])
       .order('kickoff_utc', { ascending: false });
 
@@ -205,7 +209,7 @@ export default function HomePage() {
       if (latestFinished) {
         const { data: batch } = await supabase
           .from('matches')
-          .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
+          .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen')
           .eq('kickoff_utc', latestFinished.kickoff_utc);
         rawFeatured = batch;
       }
@@ -244,6 +248,8 @@ export default function HomePage() {
           away_crest: at?.crest_url ?? null,
           home_score: m.home_score ?? null,
           away_score: m.away_score ?? null,
+          home_score_pen: (m as Record<string, unknown>).home_score_pen as number | null ?? null,
+          away_score_pen: (m as Record<string, unknown>).away_score_pen as number | null ?? null,
         };
       }));
     }
@@ -433,6 +439,8 @@ export default function HomePage() {
                   awayTeamVisual={{ name: match.away_team, crestUrl: match.away_crest } as TeamVisual}
                   homeScore={match.home_score}
                   awayScore={match.away_score}
+                  homePenaltyScore={(match as Record<string, unknown>).home_score_pen as number | null ?? null}
+                  awayPenaltyScore={(match as Record<string, unknown>).away_score_pen as number | null ?? null}
                   kickoffUtc={match.kickoff_utc}
                   stage={match.stage ?? undefined}
                   group={undefined}

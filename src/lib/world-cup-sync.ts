@@ -38,7 +38,9 @@ type ProviderMatch = {
   homeTeam?: ProviderTeam | null;
   awayTeam?: ProviderTeam | null;
   score?: {
+    duration?: string | null;
     fullTime?: { home?: number | null; away?: number | null };
+    regularTime?: { home?: number | null; away?: number | null };
     extraTime?: { home?: number | null; away?: number | null };
     penalties?: { home?: number | null; away?: number | null };
   };
@@ -67,6 +69,33 @@ type PredictionSettlementRow = {
   predicted_decider: string | null;
   points_awarded: number;
 };
+
+/**
+ * Compute the correct main score for a match, excluding penalty shootout goals.
+ * football-data.org's `fullTime` includes penalties for penalty matches.
+ * We want the score at the end of regular/extra time instead.
+ */
+function getMatchScore(match: ProviderMatch): { home: number | null; away: number | null } {
+  const ft = match.score?.fullTime;
+  if (!ft) return { home: null, away: null };
+
+  // If this went to penalties, fullTime includes penalty goals — compute the real score
+  if (match.score?.duration === 'PENALTY_SHOOTOUT') {
+    const reg = match.score?.regularTime;
+    const et = match.score?.extraTime;
+    if (reg && et) {
+      // regularTime = 90-min score, extraTime = goals scored in extra time only
+      return {
+        home: (reg.home ?? 0) + (et.home ?? 0),
+        away: (reg.away ?? 0) + (et.away ?? 0),
+      };
+    }
+    if (reg) return { home: reg.home ?? null, away: reg.away ?? null };
+    // Fallback: can't determine — still use fullTime
+  }
+
+  return { home: ft.home ?? null, away: ft.away ?? null };
+}
 
 type TeamSyncRow = {
   extId: string;
@@ -184,8 +213,8 @@ export async function syncWorldCup() {
       away_team_id: awayTeamId,
       kickoff_utc: match.utcDate,
       status: normalizeStatus(match.status),
-      home_score: match.score?.fullTime?.home ?? null,
-      away_score: match.score?.fullTime?.away ?? null,
+      home_score: getMatchScore(match).home,
+      away_score: getMatchScore(match).away,
       home_score_et: match.score?.extraTime?.home ?? null,
       away_score_et: match.score?.extraTime?.away ?? null,
       home_score_pen: match.score?.penalties?.home ?? null,
@@ -491,8 +520,9 @@ export async function syncLiveScores() {
       ? teamIdByExternal.get(String(match.awayTeam.id)) ?? existingTeamRow?.away_team_id ?? null
       : existingTeamRow?.away_team_id ?? null;
 
-    const apiHome = match.score?.fullTime?.home ?? null;
-    const apiAway = match.score?.fullTime?.away ?? null;
+    const score = getMatchScore(match);
+    const apiHome = score.home;
+    const apiAway = score.away;
     const newStatus = normalizeStatus(match.status);
 
     // Skip if nothing changed and match already exists

@@ -214,6 +214,11 @@ export function FixturesByDate({ matches, userId, teamStats = [], predictions = 
                                   <span className="text-lg font-bold tabular-nums text-heading">
                                     {match.homeScore} – {match.awayScore}
                                   </span>
+                                  {match.homePenaltyScore != null && match.awayPenaltyScore != null && (
+                                    <span className="text-[10px] tabular-nums text-amber-400">
+                                      🎯 {match.homePenaltyScore} – {match.awayPenaltyScore} pens
+                                    </span>
+                                  )}
                                   {hasPrediction && (
                                     <span className="text-[10px] tabular-nums text-muted">
                                       Pred: {pred!.pred_home_score} – {pred!.pred_away_score}

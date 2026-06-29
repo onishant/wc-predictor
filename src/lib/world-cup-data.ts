@@ -105,7 +105,7 @@ async function getTeams() {
 async function getMatches() {
   const { data, error } = await supabaseAdmin
     .from('matches')
-    .select('id, external_match_id, stage, kickoff_utc, status, home_score, away_score, home_team_id, away_team_id, minute, injury_time')
+    .select('id, external_match_id, stage, kickoff_utc, status, home_score, away_score, home_score_pen, away_score_pen, home_team_id, away_team_id, minute, injury_time')
     .returns<MatchDataRow[]>();
 
   if (error) throw error;
@@ -151,6 +151,8 @@ function toMatchSummary(match: MatchDataRow, teamById: Map<string, TeamRow>): Wo
     awayTeamVisual: toTeamVisual(away),
     homeScore: match.home_score,
     awayScore: match.away_score,
+    homePenaltyScore: (match as Record<string, unknown>).home_score_pen as number | null ?? null,
+    awayPenaltyScore: (match as Record<string, unknown>).away_score_pen as number | null ?? null,
   };
 }
 

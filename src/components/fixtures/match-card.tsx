@@ -11,6 +11,8 @@ type MatchCardProps = {
   awayTeamVisual?: TeamVisual;
   homeScore?: number | null;
   awayScore?: number | null;
+  homePenaltyScore?: number | null;
+  awayPenaltyScore?: number | null;
   kickoffUtc: string;
   stage?: string;
   group?: string;
@@ -65,6 +67,8 @@ export function MatchCard({
   awayTeamVisual,
   homeScore,
   awayScore,
+  homePenaltyScore,
+  awayPenaltyScore,
   kickoffUtc,
   stage,
   group,
@@ -120,6 +124,11 @@ export function MatchCard({
               <span className="text-lg font-bold tabular-nums text-heading">
                 {homeScore} – {awayScore}
               </span>
+              {homePenaltyScore != null && awayPenaltyScore != null && (
+                <span className="text-[10px] tabular-nums text-amber-400">
+                  🎯 {homePenaltyScore} – {awayPenaltyScore} pens
+                </span>
+              )}
               {state === 'predicted' && predictedHomeScore != null && predictedAwayScore != null && (
                 <span className="text-[10px] tabular-nums text-muted">
                   Pred: {predictedHomeScore} – {predictedAwayScore}
