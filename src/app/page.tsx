@@ -28,6 +28,8 @@ type Match = {
   away_score: number | null;
   home_score_pen: number | null;
   away_score_pen: number | null;
+  minute: number | null;
+  injury_time: number | null;
 };
 
 type Prediction = {
@@ -61,7 +63,7 @@ export default function HomePage() {
 
     const { data: matchData, error: matchError } = await supabase
       .from('matches')
-      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen')
+      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen, minute, injury_time')
       .gte('kickoff_utc', now)
       .lte('kickoff_utc', in48h)
       .order('kickoff_utc', { ascending: true });
@@ -107,6 +109,8 @@ export default function HomePage() {
           away_score: (m as Record<string, unknown>).away_score as number | null ?? null,
           home_score_pen: (m as Record<string, unknown>).home_score_pen as number | null ?? null,
           away_score_pen: (m as Record<string, unknown>).away_score_pen as number | null ?? null,
+          minute: (m as Record<string, unknown>).minute as number | null ?? null,
+          injury_time: (m as Record<string, unknown>).injury_time as number | null ?? null,
         };
       });
       setMatches(parsed);
@@ -186,7 +190,7 @@ export default function HomePage() {
     // Show all matches that share the same kickoff time
     const { data: liveMatches } = await supabase
       .from('matches')
-      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen')
+      .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen, minute, injury_time')
       .in('status', ['in_play', 'paused'])
       .order('kickoff_utc', { ascending: false });
 
@@ -209,7 +213,7 @@ export default function HomePage() {
       if (latestFinished) {
         const { data: batch } = await supabase
           .from('matches')
-          .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen')
+          .select('id, external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_pen, away_score_pen, minute, injury_time')
           .eq('kickoff_utc', latestFinished.kickoff_utc);
         rawFeatured = batch;
       }
@@ -250,6 +254,8 @@ export default function HomePage() {
           away_score: m.away_score ?? null,
           home_score_pen: (m as Record<string, unknown>).home_score_pen as number | null ?? null,
           away_score_pen: (m as Record<string, unknown>).away_score_pen as number | null ?? null,
+          minute: (m as Record<string, unknown>).minute as number | null ?? null,
+          injury_time: (m as Record<string, unknown>).injury_time as number | null ?? null,
         };
       }));
     }
@@ -350,7 +356,7 @@ export default function HomePage() {
                       {isLive ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-400">
                           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
-                          Live
+                          {featuredMatch.minute != null ? `${featuredMatch.minute}'${featuredMatch.injury_time ? `+${featuredMatch.injury_time}` : ''}` : 'Live'}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/12 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-400">
@@ -445,6 +451,8 @@ export default function HomePage() {
                   stage={match.stage ?? undefined}
                   group={undefined}
                   status={match.status}
+                  minute={match.minute}
+                  injuryTime={match.injury_time}
                   predictedResult={pred?.predicted_result ?? null}
                   predictedHomeScore={pred?.pred_home_score ?? null}
                   predictedAwayScore={pred?.pred_away_score ?? null}

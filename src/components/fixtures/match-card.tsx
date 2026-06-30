@@ -169,7 +169,7 @@ export function MatchCard({
         )}
       </div>
 
-      {(status === 'IN_PLAY' || status === 'PAUSED') && (
+      {(status === 'IN_PLAY' || status === 'PAUSED' || status === 'in_play' || status === 'paused') && (
         <div className="mt-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-400">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
