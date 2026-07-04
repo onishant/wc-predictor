@@ -284,6 +284,15 @@ async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatc
     .returns<PredictionSettlementRow[]>();
   if (error) throw error;
 
+  // Fetch existing best_streak values so we never decrease them
+  const { data: existingProgress } = await supabaseAdmin
+    .from('user_progress')
+    .select('user_id, best_streak')
+    .returns<{ user_id: string; best_streak: number }[]>();
+  const existingBestStreak = new Map<string, number>(
+    (existingProgress ?? []).map((r) => [r.user_id, r.best_streak ?? 0])
+  );
+
   const predictionsByUser = new Map<string, PredictionSettlementRow[]>();
   for (const prediction of settledPredictions ?? []) {
     const userPredictions = predictionsByUser.get(prediction.user_id) ?? [];
@@ -292,10 +301,13 @@ async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatc
   }
 
   const progressRows = [...predictionsByUser.entries()].map(([userId, predictions]) => {
-    const sortedPredictions = predictions.sort((a, b) => {
+    const sortedPredictions = [...predictions].sort((a, b) => {
       const aMatch = matchesByExternalId.get(a.match_external_id);
       const bMatch = matchesByExternalId.get(b.match_external_id);
-      return (aMatch?.kickoff_utc ?? '').localeCompare(bMatch?.kickoff_utc ?? '');
+      const kickoffDiff = (aMatch?.kickoff_utc ?? '').localeCompare(bMatch?.kickoff_utc ?? '');
+      if (kickoffDiff !== 0) return kickoffDiff;
+      // Stable tiebreaker: use match_external_id so order is deterministic
+      return a.match_external_id.localeCompare(b.match_external_id);
     });
 
     let points = 0;
@@ -311,6 +323,9 @@ async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatc
         currentStreak = 0;
       }
     }
+
+    // Never let best_streak decrease — it's a lifetime best
+    bestStreak = Math.max(bestStreak, existingBestStreak.get(userId) ?? 0);
 
     return {
       user_id: userId,
