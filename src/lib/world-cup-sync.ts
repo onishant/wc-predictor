@@ -46,7 +46,7 @@ type ProviderMatch = {
   };
 };
 
-type FinishedMatchRow = {
+export type FinishedMatchRow = {
   external_match_id: string | null;
   kickoff_utc: string;
   status: string;
@@ -276,7 +276,7 @@ async function settleFinishedMatchPredictions(settledAt: string) {
   return unsettledPredictions?.length ?? 0;
 }
 
-async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatchRow>) {
+export async function rebuildUserProgress(matchesByExternalId: Map<string, FinishedMatchRow>) {
   const { data: settledPredictions, error } = await supabaseAdmin
     .from('predictions')
     .select('id, user_id, match_external_id, predicted_result, pred_home_score, pred_away_score, predicted_decider, points_awarded')
