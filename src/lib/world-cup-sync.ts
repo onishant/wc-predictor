@@ -226,10 +226,44 @@ export async function syncWorldCup() {
     };
   });
 
+  // Before upserting, fetch current scores for matches we're about to update
+  // so we can detect score changes and re-score affected predictions
+  const incomingExternalIds = matchRows.map((m) => m.external_match_id).filter(Boolean) as string[];
+  let existingScores = new Map<string, { home: number | null; away: number | null; pen_home: number | null; pen_away: number | null }>();
+  if (incomingExternalIds.length > 0) {
+    const { data: existing } = await supabaseAdmin
+      .from('matches')
+      .select('external_match_id, home_score, away_score, home_score_pen, away_score_pen')
+      .in('external_match_id', incomingExternalIds)
+      .returns<{ external_match_id: string; home_score: number | null; away_score: number | null; home_score_pen: number | null; away_score_pen: number | null }[]>();
+    for (const m of existing ?? []) {
+      existingScores.set(m.external_match_id, { home: m.home_score, away: m.away_score, pen_home: m.home_score_pen, pen_away: m.away_score_pen });
+    }
+  }
+
   const { error: matchesError } = await supabaseAdmin
     .from('matches')
     .upsert(matchRows, { onConflict: 'external_match_id' });
   if (matchesError) throw matchesError;
+
+  // If any match scores changed, reset settled predictions so they get re-scored
+  const changedMatchIds: string[] = [];
+  for (const row of matchRows) {
+    const extId = row.external_match_id as string;
+    const prev = existingScores.get(extId);
+    if (!prev) continue; // new match, no predictions to re-score
+    if (prev.home !== row.home_score || prev.away !== row.away_score ||
+        prev.pen_home !== row.home_score_pen || prev.pen_away !== row.away_score_pen) {
+      changedMatchIds.push(extId);
+    }
+  }
+  if (changedMatchIds.length > 0) {
+    await supabaseAdmin
+      .from('predictions')
+      .update({ settled_at: null, points_awarded: 0 })
+      .in('match_external_id', changedMatchIds)
+      .not('settled_at', 'is', null);
+  }
 
   const settledPredictions = await settleFinishedMatchPredictions(syncedAt);
 
