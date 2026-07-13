@@ -19,15 +19,33 @@ export function WinnerAwardBanner({ compact = false }: WinnerAwardBannerProps) {
             {winnerAwardNote.title}
           </h2>
           <p className="mt-2 text-sm leading-6 text-body">
-            {winnerAwardNote.message}
+            {winnerAwardNote.messagePrefix}{' '}
+            <a
+              href={winnerAwardNote.prizeUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-amber-200 underline decoration-amber-300/60 underline-offset-4 transition hover:text-amber-100"
+            >
+              {winnerAwardNote.prizeName}
+            </a>
+            .
           </p>
           <p className="mt-2 text-xs font-medium text-amber-100/85">
             {winnerAwardNote.footnote}
           </p>
         </div>
 
-        {!compact && (
-          <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <a
+            href={winnerAwardNote.prizeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full border border-amber-300/40 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-200/10"
+          >
+            View prize
+          </a>
+          {!compact && (
+            <>
             <Link
               href="/leaderboard"
               className="rounded-full bg-amber-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
@@ -40,8 +58,9 @@ export function WinnerAwardBanner({ compact = false }: WinnerAwardBannerProps) {
             >
               Scoring rules
             </Link>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </section>
   );
