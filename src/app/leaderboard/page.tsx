@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import { AppNav } from '@/components/app-nav';
 import { AvatarBadge } from '@/components/avatar/avatar-badge';
+import { WinnerAwardBanner } from '@/components/winner-award-banner';
 
 type LeaderboardRow = {
   user_id: string;
@@ -336,19 +337,7 @@ export default function LeaderboardPage() {
 
   const userRow = userId ? allRows.find((row) => row.user_id === userId) : null;
   const topThree = rows.slice(0, 3);
-
-  if (!supabase) {
-    return (
-      <main className="min-h-screen bg-background px-4 py-8 text-heading sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6">
-          <AppNav />
-          <div className="rounded-2xl border border-amber-900/60 bg-amber-950/50 p-4 text-sm text-amber-200">
-            Supabase env vars are missing.
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const missingSupabaseConfig = !supabase;
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-heading sm:px-6 lg:px-8">
@@ -400,6 +389,12 @@ export default function LeaderboardPage() {
           </div>
         </header>
 
+        {missingSupabaseConfig && (
+          <div className="rounded-2xl border border-amber-900/60 bg-amber-950/50 p-4 text-sm text-amber-200">
+            Supabase env vars are missing. Leaderboard data is unavailable in this local session.
+          </div>
+        )}
+
         {userId && userOverallRank > 0 && (
           <div className="flex items-center justify-between rounded-2xl border border-border-subtle bg-surface/60 p-4">
             <div>
@@ -433,6 +428,8 @@ export default function LeaderboardPage() {
             )}
           </div>
         )}
+
+        <WinnerAwardBanner compact />
 
         <div className="flex gap-2 rounded-xl bg-surface-raised p-1">
           {userGroupId && (

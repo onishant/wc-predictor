@@ -8,6 +8,7 @@ import { MatchCard } from '@/components/fixtures/match-card';
 import { TeamBadge } from '@/components/fixtures/team-badge';
 import { PredictionPanel } from '@/components/fixtures/prediction-panel';
 import { CircularBracket } from '@/components/knockout/circular-bracket';
+import { WinnerAwardBanner } from '@/components/winner-award-banner';
 import { supabase } from '@/lib/supabase-browser';
 import type { TeamVisual } from '@/lib/team-visuals';
 import type { TeamWorldCupStats } from '@/lib/football-data';
@@ -327,6 +328,10 @@ export default function HomePage() {
             </div>
           </div>
         </header>
+
+        <div className="mt-6">
+          <WinnerAwardBanner />
+        </div>
 
         {/* Featured matches (live or last finished batch) */}
         {featuredMatches.length > 0 && (() => {
