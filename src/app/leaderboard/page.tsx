@@ -44,6 +44,10 @@ type MatchRow = {
   status: string;
   home_score: number | null;
   away_score: number | null;
+  home_score_et?: number | null;
+  away_score_et?: number | null;
+  home_score_pen?: number | null;
+  away_score_pen?: number | null;
 };
 
 type TeamRow = {
@@ -73,9 +77,43 @@ function getResultLabel(result: 'home' | 'away' | 'draw', homeTeam?: string, awa
 
 function getActualResult(match: MatchRow | null): 'home' | 'away' | 'draw' | null {
   if (!match || match.home_score == null || match.away_score == null) return null;
+  if (match.home_score_pen != null && match.away_score_pen != null) {
+    return match.home_score_pen > match.away_score_pen ? 'home' : 'away';
+  }
   if (match.home_score > match.away_score) return 'home';
   if (match.away_score > match.home_score) return 'away';
   return 'draw';
+}
+
+function getActualDecider(match: MatchRow | null): 'full_time' | 'extra_time' | 'penalties' | null {
+  if (!match) return null;
+  if (match.home_score_pen != null && match.away_score_pen != null) return 'penalties';
+  if (match.home_score_et != null && match.away_score_et != null) return 'extra_time';
+  if (match.home_score != null && match.away_score != null) return 'full_time';
+  return null;
+}
+
+function getActualResultDescription(match: MatchRow | null, homeTeam?: string, awayTeam?: string) {
+  const actualResult = getActualResult(match);
+  const actualDecider = getActualDecider(match);
+  if (!actualResult || !actualDecider) return null;
+
+  if (actualResult === 'draw') {
+    return {
+      label: 'Draw',
+      note: actualDecider === 'full_time' ? 'Finished in full time' : 'Finished level after extra time',
+    };
+  }
+
+  const winnerLabel = actualResult === 'home' ? homeTeam ?? 'Home win' : awayTeam ?? 'Away win';
+  const note =
+    actualDecider === 'penalties'
+      ? 'Won on penalties'
+      : actualDecider === 'extra_time'
+        ? 'Won after extra time'
+        : 'Won in full time';
+
+  return { label: winnerLabel, note };
 }
 
 function formatDateTime(value?: string | null) {
@@ -185,7 +223,7 @@ export default function LeaderboardPage() {
           if (externalMatchIds.length > 0) {
             const { data: matchData, error: matchError } = await supabase!
               .from('matches')
-              .select('external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score')
+              .select('external_match_id, home_team_id, away_team_id, kickoff_utc, stage, status, home_score, away_score, home_score_et, away_score_et, home_score_pen, away_score_pen')
               .in('external_match_id', externalMatchIds);
 
             if (matchError) {
@@ -500,9 +538,8 @@ export default function LeaderboardPage() {
                   {progressRows.map((row) => {
                     const homeName = row.homeTeam?.name ?? 'TBD';
                     const awayName = row.awayTeam?.name ?? 'TBD';
-                    const actualResult = getActualResult(row.match);
                     const predictedResultLabel = getResultLabel(row.predicted_result, homeName, awayName);
-                    const actualResultLabel = actualResult ? getResultLabel(actualResult, homeName, awayName) : null;
+                    const actualOutcome = getActualResultDescription(row.match, homeName, awayName);
                     const settled = Boolean(row.settled_at);
 
                     return (
@@ -539,8 +576,12 @@ export default function LeaderboardPage() {
                               <div className="font-semibold tabular-nums text-heading">
                                 {row.match.home_score} – {row.match.away_score}
                               </div>
-                              {actualResultLabel && (
-                                <div className="mt-1 text-xs text-muted">{actualResultLabel}</div>
+                              {actualOutcome && <div className="mt-1 text-xs text-muted">{actualOutcome.label}</div>}
+                              {actualOutcome?.note && <div className="mt-1 text-[11px] text-faint">{actualOutcome.note}</div>}
+                              {row.match.home_score_pen != null && row.match.away_score_pen != null && (
+                                <div className="mt-1 text-[11px] text-faint">
+                                  Pens {row.match.home_score_pen} – {row.match.away_score_pen}
+                                </div>
                               )}
                             </>
                           ) : (
