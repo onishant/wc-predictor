@@ -626,11 +626,7 @@ export function PredictionPanel({
                         ? 'Select a decider'
                         : !winner
                           ? 'Select a winner'
-                          : !scoreValid
-                            ? decider === 'penalties' ? 'Score must be a draw' : 'Score must have a winner'
-                            : !winnerMatchesScore
-                              ? 'Winner doesn\'t match score'
-                              : 'Complete all steps above'
+                          : 'Complete all steps above'
                       : 'Save prediction'}
           </button>
         </div>
