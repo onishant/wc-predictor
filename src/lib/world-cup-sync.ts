@@ -229,7 +229,7 @@ export async function syncWorldCup() {
   // Before upserting, fetch current scores for matches we're about to update
   // so we can detect score changes and re-score affected predictions
   const incomingExternalIds = matchRows.map((m) => m.external_match_id).filter(Boolean) as string[];
-  let existingScores = new Map<string, { home: number | null; away: number | null; pen_home: number | null; pen_away: number | null }>();
+  const existingScores = new Map<string, { home: number | null; away: number | null; pen_home: number | null; pen_away: number | null }>();
   if (incomingExternalIds.length > 0) {
     const { data: existing } = await supabaseAdmin
       .from('matches')
@@ -380,6 +380,24 @@ export async function rebuildUserProgress(matchesByExternalId: Map<string, Finis
   if (upsertError) throw upsertError;
 }
 
+export async function rebuildProgressFromSettledPredictions() {
+  const { data: finishedMatches, error } = await supabaseAdmin
+    .from('matches')
+    .select('external_match_id, kickoff_utc, status, home_score, away_score, home_score_et, away_score_et, home_score_pen, away_score_pen, stage')
+    .eq('status', 'finished')
+    .not('external_match_id', 'is', null)
+    .returns<FinishedMatchRow[]>();
+  if (error) throw error;
+
+  const matchesByExternalId = new Map<string, FinishedMatchRow>(
+    (finishedMatches ?? []).map((match) => [match.external_match_id as string, match])
+  );
+
+  await rebuildUserProgress(matchesByExternalId);
+
+  return { matches: finishedMatches?.length ?? 0 };
+}
+
 function getActualDecider(match: FinishedMatchRow): 'full_time' | 'extra_time' | 'penalties' {
   if (match.home_score_pen != null && match.away_score_pen != null) return 'penalties';
   if (match.home_score_et != null && match.away_score_et != null) return 'extra_time';
@@ -401,34 +419,17 @@ function scorePrediction(prediction: PredictionSettlementRow, match: FinishedMat
     return points;
   }
 
-  // Knockout with decider
-  let scoreHome: number | null = null;
-  let scoreAway: number | null = null;
-  let actualResult: 'home' | 'away' | 'draw';
+  // Knockout scoring: compare score against the match score at the end of play
+  // (full time if settled in 90 mins, otherwise the extra-time/final non-penalty score).
+  const scoreHome = match.home_score;
+  const scoreAway = match.away_score;
+  if (scoreHome == null || scoreAway == null) return 0;
 
-  if (decider === 'full_time') {
-    scoreHome = match.home_score;
-    scoreAway = match.away_score;
-    if (scoreHome == null || scoreAway == null) return 0;
-    actualResult = getResult(scoreHome, scoreAway);
-  } else if (decider === 'extra_time') {
-    // Use 120-min score if available, else fall back to fullTime
-    // home_score_et = goals scored in extra time only, not cumulative
-    scoreHome = match.home_score;
-    scoreAway = match.away_score;
-    if (scoreHome == null || scoreAway == null) return 0;
-    actualResult = getResult(scoreHome, scoreAway);
+  let actualResult: 'home' | 'away' | 'draw';
+  if (match.home_score_pen != null && match.away_score_pen != null) {
+    actualResult = match.home_score_pen > match.away_score_pen ? 'home' : 'away';
   } else {
-    // penalties: score is 120-min result, winner is shootout
-    scoreHome = match.home_score;
-    scoreAway = match.away_score;
-    if (scoreHome == null || scoreAway == null) return 0;
-    // At penalties, 120-min score is always a draw
-    actualResult = 'draw';
-    // But predicted result should be the shootout winner
-    if (match.home_score_pen != null && match.away_score_pen != null) {
-      actualResult = match.home_score_pen > match.away_score_pen ? 'home' : 'away';
-    }
+    actualResult = getResult(scoreHome, scoreAway);
   }
 
   let points = 0;
@@ -445,6 +446,45 @@ function scorePrediction(prediction: PredictionSettlementRow, match: FinishedMat
   if (decider === actualDecider) points += 5;
 
   return points;
+}
+
+export async function resettleFinishedMatchPredictions(settledAt = new Date().toISOString()) {
+  const { data: finishedMatches, error: matchesError } = await supabaseAdmin
+    .from('matches')
+    .select('external_match_id, kickoff_utc, status, home_score, away_score, home_score_et, away_score_et, home_score_pen, away_score_pen, stage')
+    .eq('status', 'finished')
+    .not('external_match_id', 'is', null)
+    .not('home_score', 'is', null)
+    .not('away_score', 'is', null)
+    .returns<FinishedMatchRow[]>();
+  if (matchesError) throw matchesError;
+
+  const matchesByExternalId = new Map((finishedMatches ?? []).map((match) => [match.external_match_id as string, match]));
+  const finishedExternalIds = [...matchesByExternalId.keys()];
+  if (finishedExternalIds.length === 0) return { matches: 0, rescored: 0 };
+
+  const { data: predictions, error: predictionsError } = await supabaseAdmin
+    .from('predictions')
+    .select('id, user_id, match_external_id, predicted_result, pred_home_score, pred_away_score, predicted_decider, points_awarded')
+    .in('match_external_id', finishedExternalIds)
+    .returns<PredictionSettlementRow[]>();
+  if (predictionsError) throw predictionsError;
+
+  for (const prediction of predictions ?? []) {
+    const match = matchesByExternalId.get(prediction.match_external_id);
+    if (!match) continue;
+
+    const pointsAwarded = scorePrediction(prediction, match);
+    const { error } = await supabaseAdmin
+      .from('predictions')
+      .update({ points_awarded: pointsAwarded, settled_at: settledAt, is_locked: true })
+      .eq('id', prediction.id);
+    if (error) throw error;
+  }
+
+  await rebuildUserProgress(matchesByExternalId);
+
+  return { matches: finishedExternalIds.length, rescored: predictions?.length ?? 0 };
 }
 
 function getResult(homeScore: number, awayScore: number) {

@@ -67,9 +67,9 @@ export default function RulesPage() {
             </li>
             <li className="flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-400/10 text-xs font-bold text-cyan-300">3</span>
-              <span><strong>The scoreline</strong> — must match your decider:
-                <br /><span className="text-muted">• Full Time / Extra Time → win score (1-0, 2-1, etc.)</span>
-                <br /><span className="text-muted">• Penalties → draw score (0-0, 1-1, 2-2, etc.)</span>
+              <span><strong>The scoreline</strong> — your predicted football score at the end of play:
+                <br /><span className="text-muted">• If the match ends in 90 minutes, it is checked against full time</span>
+                <br /><span className="text-muted">• If the match goes beyond 90 minutes, it is checked against the final extra-time score</span>
               </span>
             </li>
           </ol>
@@ -85,15 +85,15 @@ export default function RulesPage() {
             </thead>
             <tbody className="text-heading">
               <tr className="border-t border-border-subtle/40">
-                <td className="py-2.5">Correct result (including shootout winner)</td>
+                <td className="py-2.5">Correct winner (including shootout winner)</td>
                 <td className="py-2.5 text-right font-semibold tabular-nums">+10</td>
               </tr>
               <tr className="border-t border-border-subtle/40">
-                <td className="py-2.5">Correct home team score (at relevant stage)</td>
+                <td className="py-2.5">Correct home team score (end of play)</td>
                 <td className="py-2.5 text-right font-semibold tabular-nums">+5</td>
               </tr>
               <tr className="border-t border-border-subtle/40">
-                <td className="py-2.5">Correct away team score (at relevant stage)</td>
+                <td className="py-2.5">Correct away team score (end of play)</td>
                 <td className="py-2.5 text-right font-semibold tabular-nums">+5</td>
               </tr>
               <tr className="border-t border-border-subtle/40">
@@ -118,24 +118,24 @@ export default function RulesPage() {
         </h2>
         <div className="rounded-2xl border border-border-subtle bg-surface/60 p-5">
           <p className="text-sm text-muted mb-3">
-            Your score prediction is compared against the result at the stage you predicted:
+            Your knockout score prediction is always compared against the final football score at the end of play:
           </p>
           <ul className="space-y-2 text-sm text-heading">
             <li className="flex items-start gap-2">
               <span>⚽</span>
-              <span><strong>Full Time</strong> → settled on the 90-minute score</span>
+              <span><strong>Match ends in 90 minutes</strong> → score settled on full time</span>
             </li>
             <li className="flex items-start gap-2">
               <span>⏱️</span>
-              <span><strong>Extra Time</strong> → settled on the 120-minute score</span>
+              <span><strong>Match goes to extra time</strong> → score settled on the final extra-time score</span>
             </li>
             <li className="flex items-start gap-2">
               <span>🎯</span>
-              <span><strong>Penalties</strong> → score settled on 120-min result (always a draw), result = shootout winner</span>
+              <span><strong>Penalties</strong> → score still settled on the final extra-time score, with shootout winner used only for the winner pick</span>
             </li>
           </ul>
           <p className="mt-4 text-xs text-faint">
-            Note: penalty shootout scores (e.g. 4-3) are never used for score predictions. Only the match score matters.
+            Note: penalty shootout scores (e.g. 4-3) are never used for score predictions. They only decide the winner and the decider bonus.
           </p>
         </div>
       </section>
@@ -160,7 +160,7 @@ export default function RulesPage() {
 
           <div className="rounded-2xl border border-border-subtle bg-surface/60 p-5">
             <p className="text-sm font-semibold text-heading mb-2">
-              You predict: 1-1 Draw, Penalties → Home wins
+              You predict: 1-1, Home wins, Penalties
             </p>
             <p className="text-sm text-muted mb-2">
               Actual: 1-1 at 120 mins → Home wins 4-3 on pens
@@ -172,13 +172,10 @@ export default function RulesPage() {
 
           <div className="rounded-2xl border border-border-subtle bg-surface/60 p-5">
             <p className="text-sm font-semibold text-heading mb-2">
-              You predict: 2-1 Home, Penalties → Home wins
-            </p>
-            <p className="text-xs text-amber-300 mb-2">
-              ⚠️ Invalid — penalties only allow draw scores
+              You predict: 2-1, Home wins, Penalties
             </p>
             <p className="text-sm text-muted">
-              The app prevents this prediction from being saved.
+              This is valid. If the match actually finishes 2-1 after extra time, you can still get the score points even if your decider pick is wrong.
             </p>
           </div>
 
@@ -190,10 +187,10 @@ export default function RulesPage() {
               Actual: 1-1 at 90 mins → 2-1 Home after extra time
             </p>
             <p className="text-sm text-amber-300 font-semibold">
-              ❌ Result (+0, draw at FT) ❌ Scores (+0) ❌ Decider (+0) = 0 points
+              ✅ Result (+10) ❌ Scores (+0) ❌ Decider (+0) = 10 points
             </p>
             <p className="text-xs text-muted mt-1">
-              The match went to extra time, so your &quot;Full Time&quot; pick and score are compared against the 90-min result.
+              Winner is scored separately from the decider, so you still get winner points if the right team goes through.
             </p>
           </div>
         </div>

@@ -88,49 +88,23 @@ export function PredictionPanel({
   const isLocked = new Date() >= new Date(kickoffUtc);
   const isSupabaseReady = Boolean(supabase && currentUserId);
 
-  // Score constraints for knockout matches
-  const isDrawScore = homeScore === awayScore;
-  const isWinScore = homeScore !== awayScore;
-
-  // For penalties: only draw scores allowed
-  // For full_time/extra_time: only win scores allowed (no draws)
-  const scoreValid = isKnockout
-    ? decider === 'penalties'
-      ? isDrawScore
-      : isWinScore
-    : true;
-
-  // Winner must match score direction (penalties exempt — score is always a draw)
-  const winnerMatchesScore = isKnockout
-    ? decider === 'penalties'
-      ? true
-      : (winner === 'home' && homeScore > awayScore) || (winner === 'away' && awayScore > homeScore)
-    : true;
-
-  // Can save?
   const canSave = isKnockout
-    ? decider !== null && winner !== null && scoreValid && winnerMatchesScore
+    ? decider !== null && winner !== null
     : true;
 
-  // Dynamic score context label for knockouts
-  const scoreContextLabel = isKnockout && decider
-    ? decider === 'full_time'
-      ? 'Score at 90 mins'
-      : 'Score at 120 mins'
-    : null;
-
-  const scoreContextSub = isKnockout && decider === 'penalties'
-    ? 'Shootout score not used for scoring'
+  const scoreContextLabel = isKnockout ? 'Predicted match score' : null;
+  const scoreContextSub = isKnockout
+    ? 'Compared against the final score at the end of play. Penalty shootout scores are ignored.'
     : null;
 
   // Points preview for knockouts
   const knockoutPointsPreview = isKnockout && decider && winner
     ? {
         result: 10,
-        scores: scoreValid ? 10 : 0,
+        scores: 10,
         decider: 5,
-        max: scoreValid ? 25 : 0,
-        scoreLabel: decider === 'full_time' ? 'at 90 mins' : 'at 120 mins',
+        max: 25,
+        scoreLabel: 'at end of play',
       }
     : null;
 
@@ -159,22 +133,8 @@ export function PredictionPanel({
     };
   }, []);
 
-  // Adjust scores when decider changes
   function handleDeciderChange(newDecider: Decider) {
     setDecider(newDecider);
-    if (!isKnockout) return;
-    if (newDecider === 'penalties') {
-      // Force draw score
-      if (homeScore !== awayScore) {
-        setHomeScore(0);
-        setAwayScore(0);
-      }
-    } else {
-      // Force win score — if currently a draw, bump home
-      if (homeScore === awayScore) {
-        setHomeScore(homeScore + 1);
-      }
-    }
   }
 
   async function handleSave() {
@@ -220,32 +180,8 @@ export function PredictionPanel({
     }
   }
 
-  // Sync winner with score changes
-  function syncWinnerFromScore(newHome: number, newAway: number) {
-    if (!isKnockout) return;
-    if (newHome > newAway) setWinner('home');
-    else if (newAway > newHome) setWinner('away');
-    // if draw and penalties, that's fine; if draw and not penalties, adjustScore handles it
-  }
-
-  // Adjust scores and keep winner in sync
-  function adjustScore(current: number, delta: number, isHome: boolean): number {
+  function adjustScore(current: number, delta: number): number {
     const next = Math.max(0, current + delta);
-    if (!isKnockout || !decider) return next;
-
-    if (decider === 'penalties') {
-      // Keep draw: adjust both scores together
-      setHomeScore(next);
-      setAwayScore(next);
-      return next;
-    }
-
-    // For FT/ET, sync winner using the actual next values
-    if (isHome) {
-      syncWinnerFromScore(next, awayScore);
-    } else {
-      syncWinnerFromScore(homeScore, next);
-    }
     return next;
   }
 
@@ -253,16 +189,8 @@ export function PredictionPanel({
     const v = Math.max(0, value);
     if (isHome) {
       setHomeScore(v);
-      if (isKnockout && decider === 'penalties' && v !== awayScore) {
-        setAwayScore(v);
-      }
-      syncWinnerFromScore(v, awayScore);
     } else {
       setAwayScore(v);
-      if (isKnockout && decider === 'penalties' && v !== homeScore) {
-        setHomeScore(v);
-      }
-      syncWinnerFromScore(homeScore, v);
     }
   }
 
@@ -481,16 +409,16 @@ export function PredictionPanel({
                         value={homeScore}
                         onChange={(v) => handleScoreChange(true, v)}
                         disabled={isLocked || loading}
-                        onDecrease={() => setHomeScore((s) => adjustScore(s, -1, true))}
-                        onIncrease={() => setHomeScore((s) => adjustScore(s, 1, true))}
+                        onDecrease={() => setHomeScore((s) => adjustScore(s, -1))}
+                        onIncrease={() => setHomeScore((s) => adjustScore(s, 1))}
                       />
                       <span className="text-2xl font-light text-faint">:</span>
                       <ScoreStepper
                         value={awayScore}
                         onChange={(v) => handleScoreChange(false, v)}
                         disabled={isLocked || loading}
-                        onDecrease={() => setAwayScore((s) => adjustScore(s, -1, false))}
-                        onIncrease={() => setAwayScore((s) => adjustScore(s, 1, false))}
+                        onDecrease={() => setAwayScore((s) => adjustScore(s, -1))}
+                        onIncrease={() => setAwayScore((s) => adjustScore(s, 1))}
                       />
                     </div>
                     <div className="flex flex-1 flex-col items-center gap-2">
@@ -502,9 +430,7 @@ export function PredictionPanel({
                   {!isLocked && (
                     <div className="mb-4 rounded-xl border border-border-subtle/60 bg-surface/40 px-4 py-2.5 text-center">
                       <p className="text-[11px] text-muted">
-                        {decider === 'penalties'
-                          ? '🔒 Score must be a draw — shootout score not used'
-                          : '🔒 Score must have a winner — no draws'}
+                        Score points are based on the final football score at the end of play. Winner and decider are scored separately.
                       </p>
                     </div>
                   )}
@@ -516,10 +442,10 @@ export function PredictionPanel({
                     </span>
                     <p className="mt-1 text-xs text-muted">
                       {decider === 'penalties'
-                        ? `Via penalties · ${result === 'home' ? homeTeam : awayTeam} wins shootout`
+                        ? `${result === 'home' ? homeTeam : awayTeam} to win on penalties`
                         : decider === 'extra_time'
-                          ? `In extra time · ${result === 'home' ? homeTeam : awayTeam} wins`
-                          : `At full time · ${result === 'home' ? homeTeam : awayTeam} wins`}
+                          ? `${result === 'home' ? homeTeam : awayTeam} to win in extra time`
+                          : `${result === 'home' ? homeTeam : awayTeam} to win in full time`}
                     </p>
                   </div>
 
@@ -582,16 +508,16 @@ export function PredictionPanel({
                     value={homeScore}
                     onChange={(v) => handleScoreChange(true, v)}
                     disabled={isLocked || loading}
-                    onDecrease={() => setHomeScore((s) => adjustScore(s, -1, true))}
-                    onIncrease={() => setHomeScore((s) => adjustScore(s, 1, true))}
+                    onDecrease={() => setHomeScore((s) => adjustScore(s, -1))}
+                    onIncrease={() => setHomeScore((s) => adjustScore(s, 1))}
                   />
                   <span className="text-2xl font-light text-faint">:</span>
                   <ScoreStepper
                     value={awayScore}
                     onChange={(v) => handleScoreChange(false, v)}
                     disabled={isLocked || loading}
-                    onDecrease={() => setAwayScore((s) => adjustScore(s, -1, false))}
-                    onIncrease={() => setAwayScore((s) => adjustScore(s, 1, false))}
+                    onDecrease={() => setAwayScore((s) => adjustScore(s, -1))}
+                    onIncrease={() => setAwayScore((s) => adjustScore(s, 1))}
                   />
                 </div>
                 <div className="flex flex-1 flex-col items-center gap-2">
