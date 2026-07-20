@@ -171,6 +171,7 @@ export default function LeaderboardPage() {
   const [userGroupId, setUserGroupId] = useState<string | null>(null);
   const [userGroupName, setUserGroupName] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [tournamentFinished, setTournamentFinished] = useState(false);
   const [tab, setTab] = useState<Tab>('group');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -204,6 +205,18 @@ export default function LeaderboardPage() {
         }
 
         if (!gid) setTab('overall');
+
+        const { data: unfinishedMatches, error: unfinishedMatchesError } = await supabase!
+          .from('matches')
+          .select('id')
+          .neq('status', 'finished')
+          .limit(1);
+
+        if (unfinishedMatchesError) {
+          setError(unfinishedMatchesError.message);
+        } else {
+          setTournamentFinished((unfinishedMatches ?? []).length === 0);
+        }
 
         const { data: predictionData, error: predictionError } = await supabase!
           .from('predictions')
@@ -376,6 +389,7 @@ export default function LeaderboardPage() {
   const userRow = userId ? allRows.find((row) => row.user_id === userId) : null;
   const topThree = rows.slice(0, 3);
   const missingSupabaseConfig = !supabase;
+  const overallWinnerUserId = tournamentFinished ? allRows[0]?.user_id ?? null : null;
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-heading sm:px-6 lg:px-8">
@@ -628,7 +642,14 @@ export default function LeaderboardPage() {
 
                 <div className="mt-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted">Rank #{row.rank}</p>
-                  <h2 className="mt-1 text-xl font-semibold">{row.username ?? 'Anonymous'}</h2>
+                  <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold">
+                    <span>{row.username ?? 'Anonymous'}</span>
+                    {tab === 'overall' && row.user_id === overallWinnerUserId && (
+                      <span aria-label="Overall winner" title="Overall winner">
+                        👑
+                      </span>
+                    )}
+                  </h2>
                 </div>
 
                 <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
@@ -682,7 +703,12 @@ export default function LeaderboardPage() {
                             size="sm"
                           />
                           <div>
-                            {row.username ?? 'Anonymous'}
+                            <span>{row.username ?? 'Anonymous'}</span>
+                            {tab === 'overall' && row.user_id === overallWinnerUserId && (
+                              <span className="ml-2" aria-label="Overall winner" title="Overall winner">
+                                👑
+                              </span>
+                            )}
                             {row.user_id === userId && <span className="ml-2 text-xs text-cyan-400">(you)</span>}
                           </div>
                         </div>
