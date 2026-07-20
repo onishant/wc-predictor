@@ -165,6 +165,30 @@ function PointsBadge({ points, settled }: { points: number | null; settled: bool
   );
 }
 
+function isGroupWinner(
+  row: LeaderboardRow,
+  allRows: LeaderboardRow[],
+  tournamentFinished: boolean,
+) {
+  if (!tournamentFinished || !row.group_id) return false;
+
+  const groupRows = allRows.filter((candidate) => candidate.group_id === row.group_id);
+  if (groupRows.length === 0) return false;
+
+  const accuracy = (candidate: LeaderboardRow) =>
+    candidate.settled_count > 0 ? candidate.correct_count / candidate.settled_count : 0;
+
+  const sortedGroupRows = groupRows.slice().sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (accuracy(b) !== accuracy(a)) return accuracy(b) - accuracy(a);
+    if (b.best_streak !== a.best_streak) return b.best_streak - a.best_streak;
+    if (b.current_streak !== a.current_streak) return b.current_streak - a.current_streak;
+    return (a.username ?? '').localeCompare(b.username ?? '');
+  });
+
+  return sortedGroupRows[0]?.user_id === row.user_id;
+}
+
 export default function LeaderboardPage() {
   const [allRows, setAllRows] = useState<(LeaderboardRow & { rank: number })[]>([]);
   const [progressRows, setProgressRows] = useState<ProgressPrediction[]>([]);
@@ -390,6 +414,13 @@ export default function LeaderboardPage() {
   const topThree = rows.slice(0, 3);
   const missingSupabaseConfig = !supabase;
   const overallWinnerUserId = tournamentFinished ? allRows[0]?.user_id ?? null : null;
+  const groupWinnerUserIds = new Set(
+    tournamentFinished
+      ? allRows
+          .filter((row) => isGroupWinner(row, allRows, tournamentFinished))
+          .map((row) => row.user_id)
+      : [],
+  );
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-heading sm:px-6 lg:px-8">
@@ -649,6 +680,16 @@ export default function LeaderboardPage() {
                         👑
                       </span>
                     )}
+                    
+                    {groupWinnerUserIds.has(row.user_id) && row.user_id !== overallWinnerUserId && (
+                      <span
+                        className="ml-1 text-xs"
+                        aria-label="Group winner"
+                        title="Group winner"
+                      >
+                        👑
+                      </span>
+                    )}
                   </h2>
                 </div>
 
@@ -706,6 +747,16 @@ export default function LeaderboardPage() {
                             <span>{row.username ?? 'Anonymous'}</span>
                             {tab === 'overall' && row.user_id === overallWinnerUserId && (
                               <span className="ml-2" aria-label="Overall winner" title="Overall winner">
+                                👑
+                              </span>
+                            )}
+                            
+                            {groupWinnerUserIds.has(row.user_id) && row.user_id !== overallWinnerUserId && (
+                              <span
+                                className="ml-1 text-xs"
+                                aria-label="Group winner"
+                                title="Group winner"
+                              >
                                 👑
                               </span>
                             )}
